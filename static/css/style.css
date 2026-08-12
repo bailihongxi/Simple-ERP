@@ -149,6 +149,26 @@ td.warning { color: #dc2626; font-weight: 600; }
     flex-wrap: wrap;
 }
 .filter-bar .form-group { margin-bottom: 0; min-width: 140px; }
+.filter-bar .filter-actions {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+    margin-left: auto;
+}
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    height: 38px;
+    font-size: 14px;
+    color: #475569;
+}
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
 
 /* 弹窗 */
 .modal-overlay {
