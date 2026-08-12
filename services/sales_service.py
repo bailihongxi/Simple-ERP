@@ -214,3 +214,40 @@ def delete_sale(sale_id):
         raise
     finally:
         conn.close()
+
+
+def batch_delete_sales(sale_ids):
+    """
+    批量删除销售记录：
+    1. 遍历所有记录，回退库存
+    2. 删除所有记录
+    返回删除的记录数
+    """
+    if not sale_ids:
+        return 0
+
+    placeholders = ','.join(['?'] * len(sale_ids))
+    records = query_all(
+        f"SELECT id, product_id, quantity FROM sales WHERE id IN ({placeholders})",
+        sale_ids
+    )
+    if not records:
+        return 0
+
+    conn = get_db()
+    try:
+        conn.execute('BEGIN')
+        for r in records:
+            conn.execute(
+                "UPDATE products SET current_stock = current_stock + ?, updated_at = datetime('now','localtime') WHERE id = ?",
+                (float(r['quantity']), r['product_id'])
+            )
+            conn.execute("DELETE FROM sales WHERE id = ?", (r['id'],))
+        conn.execute('COMMIT')
+    except Exception:
+        conn.execute('ROLLBACK')
+        raise
+    finally:
+        conn.close()
+
+    return len(records)

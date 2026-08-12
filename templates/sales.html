@@ -4,6 +4,7 @@
 
 {% block topbar_actions %}
 <button class="btn btn-secondary" onclick="exportCurrent()">导出</button>
+<button class="btn btn-danger" id="batchDeleteBtn" onclick="batchDelete()" style="display:none">批量删除</button>
 <button class="btn btn-primary" onclick="openSaleForm()">+ 新增销售</button>
 {% endblock %}
 
@@ -58,6 +59,7 @@
         <table>
             <thead>
                 <tr>
+                    <th style="width:40px"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
                     <th>日期</th>
                     <th>商品</th>
                     <th>客户</th>
@@ -73,6 +75,7 @@
             <tbody>
                 {% for s in sales %}
                 <tr>
+                    <td><input type="checkbox" class="row-checkbox" value="{{ s.id }}" onchange="updateBatchBtn()"></td>
                     <td>{{ s.sale_date }}</td>
                     <td>{{ s.product_name or '-' }}</td>
                     <td>{{ s.customer_name or '-' }}</td>
@@ -96,7 +99,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="10"><div class="empty-state">暂无销售记录</div></td></tr>
+                <tr><td colspan="11"><div class="empty-state">暂无销售记录</div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -119,6 +122,41 @@ function doFilter() {
     window.location.href = url;
 }
 function resetFilter() { window.location.href = '/sales/'; }
+
+function toggleSelectAll() {
+    var checked = document.getElementById('selectAll').checked;
+    document.querySelectorAll('.row-checkbox').forEach(function(cb) {
+        cb.checked = checked;
+    });
+    updateBatchBtn();
+}
+
+function updateBatchBtn() {
+    var checked = document.querySelectorAll('.row-checkbox:checked');
+    var btn = document.getElementById('batchDeleteBtn');
+    if (checked.length > 0) {
+        btn.style.display = '';
+        btn.textContent = '批量删除(' + checked.length + ')';
+    } else {
+        btn.style.display = 'none';
+    }
+}
+
+function batchDelete() {
+    var checked = document.querySelectorAll('.row-checkbox:checked');
+    if (checked.length === 0) {
+        showToast('请先选择要删除的记录', 'error');
+        return;
+    }
+    var ids = Array.from(checked).map(function(cb){return cb.value;}).join(',');
+    confirmDialog('确定要删除选中的 ' + checked.length + ' 条销售记录吗？删除后库存会自动回退。', function() {
+        var fd = new FormData();
+        fd.append('ids', ids);
+        ajaxSubmit('/sales/api/batch_delete', fd, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 500);
+        });
+    });
+}
 
 function exportCurrent() {
     var ds = document.getElementById('filterDateStart').value;
