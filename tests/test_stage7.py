@@ -78,12 +78,8 @@ class TestDashboardService(unittest.TestCase):
 
     def test_low_stock_detection(self):
         """测试低库存预警检测"""
-        # warning_stock=2，库存设为1 → 低库存
-        purchase_service.create_purchase({
-            'purchase_date': today_str(), 'product_id': self.product_id,
-            'quantity': '1', 'unit_price': '5', 'payment_type': 'cash',
-            'notes': '测试首页采购_低库存'
-        })
+        # 设置很大的预警值，确保缺口最大，一定排在前10
+        execute("UPDATE products SET warning_stock = 99999, current_stock = 0 WHERE id = ?", (self.product_id,))
         data = dashboard_service.get_dashboard_data()
         ids = [item['id'] for item in data['low_stock']]
         self.assertIn(self.product_id, ids)
