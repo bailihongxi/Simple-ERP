@@ -121,23 +121,43 @@ function exportCurrent() {
 function openPurchaseForm(record) {
     var isEdit = !!record;
     var title = isEdit ? '编辑采购' : '新增采购';
-    var productOptions = '';
+
+    // 商品搜索datalist选项
+    var productDatalist = '<datalist id="productDatalist">';
     products.forEach(function(p) {
-        var sel = (record && record.product_id == p.id) ? 'selected' : '';
-        productOptions += '<option value="' + p.id + '" ' + sel + '>' + p.name + '（库存:' + p.current_stock + '）</option>';
+        productDatalist += '<option value="' + p.name + '" data-id="' + p.id + '">库存:' + p.current_stock + ' 进货价:' + p.purchase_price + '</option>';
     });
-    var supplierOptions = '<option value="">无</option>';
+    productDatalist += '</datalist>';
+
+    // 供应商搜索datalist选项
+    var supplierDatalist = '<datalist id="supplierDatalist">';
     suppliers.forEach(function(s) {
-        var sel = (record && record.supplier_id == s.id) ? 'selected' : '';
-        supplierOptions += '<option value="' + s.id + '" ' + sel + '>' + s.name + '</option>';
+        supplierDatalist += '<option value="' + s.name + '" data-id="' + s.id + '"></option>';
     });
-    var html = '<form id="purchaseForm">' +
+    supplierDatalist += '</datalist>';
+
+    var selectedProductName = '';
+    var selectedSupplierName = '';
+    if (record) {
+        var sp = products.find(function(x){return x.id == record.product_id;});
+        if (sp) selectedProductName = sp.name;
+        var ss = suppliers.find(function(x){return x.id == record.supplier_id;});
+        if (ss) selectedSupplierName = ss.name;
+    }
+
+    var html = '<form id="purchaseForm">' + productDatalist + supplierDatalist +
         '<div class="form-row">' +
             '<div class="form-group"><label>采购日期 *</label><input type="date" name="purchase_date" value="' + (record?record.purchase_date:'{{ today }}') + '" required></div>' +
-            '<div class="form-group"><label>商品 *</label><select name="product_id" required onchange="onProductChange()">' + productOptions + '</select></div>' +
+            '<div class="form-group"><label>商品 *（输入搜索）</label>' +
+                '<input type="text" id="productSearch" list="productDatalist" value="' + selectedProductName + '" placeholder="输入商品名称搜索" required oninput="onProductSearchInput()" onchange="onProductSearchChange()">' +
+                '<input type="hidden" name="product_id" id="productId" value="' + (record?record.product_id:'') + '">' +
+            '</div>' +
         '</div>' +
         '<div class="form-row">' +
-            '<div class="form-group"><label>供应商</label><select name="supplier_id">' + supplierOptions + '</select></div>' +
+            '<div class="form-group"><label>供应商（输入搜索）</label>' +
+                '<input type="text" id="supplierSearch" list="supplierDatalist" value="' + selectedSupplierName + '" placeholder="输入供应商名称搜索" oninput="onSupplierSearchInput()" onchange="onSupplierSearchChange()">' +
+                '<input type="hidden" name="supplier_id" id="supplierId" value="' + (record?record.supplier_id:'') + '">' +
+            '</div>' +
             '<div class="form-group"><label>付款方式</label><select name="payment_type"><option value="cash" ' + (record&&record.payment_type=='cash'?'selected':'') + '>现结</option><option value="credit" ' + (record&&record.payment_type=='credit'?'selected':'') + '>赊账</option></select></div>' +
         '</div>' +
         '<div class="form-row">' +
@@ -150,15 +170,70 @@ function openPurchaseForm(record) {
     var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
         '<button class="btn btn-primary" onclick="submitPurchase(' + (isEdit?record.id:'null') + ')">保存</button>';
     showModal(title, html, footer);
-    if (!isEdit) onProductChange();
 }
 
-function onProductChange() {
-    var sel = document.querySelector('select[name="product_id"]');
-    var p = products.find(function(x){return x.id == sel.value;});
-    if (p && !document.getElementById('fldPrice').value) {
-        document.getElementById('fldPrice').value = p.purchase_price;
-        calcTotal();
+function onProductSearchInput() {
+    // 用户输入时，如果不是从列表选择的，清空隐藏id
+    var input = document.getElementById('productSearch');
+    var opts = document.querySelectorAll('#productDatalist option');
+    var matched = false;
+    for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === input.value) { matched = true; break; }
+    }
+    if (!matched) {
+        document.getElementById('productId').value = '';
+    }
+}
+
+function onProductSearchChange() {
+    // 用户从datalist选择或输入完成时，匹配商品id并自动填充单价
+    var input = document.getElementById('productSearch');
+    var opts = document.querySelectorAll('#productDatalist option');
+    for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === input.value) {
+            var pid = opts[i].getAttribute('data-id');
+            document.getElementById('productId').value = pid;
+            var p = products.find(function(x){return x.id == pid;});
+            if (p && !document.getElementById('fldPrice').value) {
+                document.getElementById('fldPrice').value = p.purchase_price;
+                calcTotal();
+            }
+            return;
+        }
+    }
+    // 没有匹配到，提示
+    if (input.value.trim()) {
+        showToast('请从下拉列表中选择商品', 'error');
+        input.value = '';
+        document.getElementById('productId').value = '';
+    }
+}
+
+function onSupplierSearchInput() {
+    var input = document.getElementById('supplierSearch');
+    var opts = document.querySelectorAll('#supplierDatalist option');
+    var matched = false;
+    for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === input.value) { matched = true; break; }
+    }
+    if (!matched) {
+        document.getElementById('supplierId').value = '';
+    }
+}
+
+function onSupplierSearchChange() {
+    var input = document.getElementById('supplierSearch');
+    var opts = document.querySelectorAll('#supplierDatalist option');
+    for (var i = 0; i < opts.length; i++) {
+        if (opts[i].value === input.value) {
+            document.getElementById('supplierId').value = opts[i].getAttribute('data-id');
+            return;
+        }
+    }
+    if (input.value.trim()) {
+        showToast('请从下拉列表中选择供应商', 'error');
+        input.value = '';
+        document.getElementById('supplierId').value = '';
     }
 }
 
@@ -169,6 +244,11 @@ function calcTotal() {
 }
 
 function submitPurchase(id) {
+    var productId = document.getElementById('productId').value;
+    if (!productId) {
+        showToast('请从下拉列表中选择商品', 'error');
+        return;
+    }
     var form = document.getElementById('purchaseForm');
     var fd = new FormData(form);
     var url = id ? '/purchase/api/update/' + id : '/purchase/api/create';
