@@ -4,6 +4,9 @@
 
 {% block topbar_actions %}
 <button class="btn btn-secondary" onclick="exportCurrent()">导出</button>
+<button class="btn btn-secondary" onclick="window.location.href='/sales/api/template'">下载模板</button>
+<button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">导入</button>
+<input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="doImport(this)">
 <button class="btn btn-danger" id="batchDeleteBtn" onclick="batchDelete()" style="display:none">批量删除</button>
 <button class="btn btn-primary" onclick="openSaleForm()">+ 新增销售</button>
 {% endblock %}
@@ -155,6 +158,17 @@ function batchDelete() {
         ajaxSubmit('/sales/api/batch_delete', fd, 'POST', function() {
             setTimeout(function(){ location.reload(); }, 500);
         });
+    });
+}
+
+function doImport(input) {
+    var file = input.files[0];
+    if (!file) return;
+    var fd = new FormData();
+    fd.append('file', file);
+    ajaxSubmit('/sales/api/import', fd, 'POST', function(data) {
+        input.value = '';
+        setTimeout(function(){ location.reload(); }, 1500);
     });
 }
 
