@@ -84,6 +84,23 @@ def api_delete(purchase_id):
         return jsonify({'success': False, 'message': f'操作失败：{str(e)}'})
 
 
+@bp.route('/api/batch_delete', methods=['POST'])
+def api_batch_delete():
+    try:
+        ids_str = request.form.get('ids', '')
+        if not ids_str:
+            return jsonify({'success': False, 'message': '请选择要删除的记录'})
+        ids = [int(x) for x in ids_str.split(',') if x.strip()]
+        if not ids:
+            return jsonify({'success': False, 'message': '请选择要删除的记录'})
+        count = purchase_service.batch_delete_purchases(ids)
+        return jsonify({'success': True, 'message': f'成功删除{count}条记录'})
+    except ValueError as e:
+        return jsonify({'success': False, 'message': str(e)})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'操作失败：{str(e)}'})
+
+
 @bp.route('/api/get/<int:purchase_id>')
 def api_get(purchase_id):
     record = purchase_service.get_purchase_by_id(purchase_id)

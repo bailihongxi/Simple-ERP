@@ -4,6 +4,7 @@
 
 {% block topbar_actions %}
 <button class="btn btn-secondary" onclick="exportCurrent()">导出</button>
+<button class="btn btn-danger" id="batchDeleteBtn" onclick="batchDelete()" style="display:none">批量删除</button>
 <button class="btn btn-primary" onclick="openPurchaseForm()">+ 新增采购</button>
 {% endblock %}
 
@@ -50,6 +51,7 @@
         <table>
             <thead>
                 <tr>
+                    <th style="width:40px"><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
                     <th>日期</th>
                     <th>商品</th>
                     <th>供应商</th>
@@ -64,6 +66,7 @@
             <tbody>
                 {% for p in purchases %}
                 <tr>
+                    <td><input type="checkbox" class="row-checkbox" value="{{ p.id }}" onchange="updateBatchBtn()"></td>
                     <td>{{ p.purchase_date }}</td>
                     <td>{{ p.product_name or '-' }}</td>
                     <td>{{ p.supplier_name or '-' }}</td>
@@ -86,7 +89,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="9"><div class="empty-state">暂无采购记录</div></td></tr>
+                <tr><td colspan="10"><div class="empty-state">暂无采购记录</div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -109,6 +112,41 @@ function doFilter() {
     window.location.href = url;
 }
 function resetFilter() { window.location.href = '/purchase/'; }
+
+function toggleSelectAll() {
+    var checked = document.getElementById('selectAll').checked;
+    document.querySelectorAll('.row-checkbox').forEach(function(cb) {
+        cb.checked = checked;
+    });
+    updateBatchBtn();
+}
+
+function updateBatchBtn() {
+    var checked = document.querySelectorAll('.row-checkbox:checked');
+    var btn = document.getElementById('batchDeleteBtn');
+    if (checked.length > 0) {
+        btn.style.display = '';
+        btn.textContent = '批量删除(' + checked.length + ')';
+    } else {
+        btn.style.display = 'none';
+    }
+}
+
+function batchDelete() {
+    var checked = document.querySelectorAll('.row-checkbox:checked');
+    if (checked.length === 0) {
+        showToast('请先选择要删除的记录', 'error');
+        return;
+    }
+    var ids = Array.from(checked).map(function(cb){return cb.value;}).join(',');
+    confirmDialog('确定要删除选中的 ' + checked.length + ' 条采购记录吗？删除后库存会自动回退。', function() {
+        var fd = new FormData();
+        fd.append('ids', ids);
+        ajaxSubmit('/purchase/api/batch_delete', fd, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 500);
+        });
+    });
+}
 
 function exportCurrent() {
     var ds = document.getElementById('filterDateStart').value;

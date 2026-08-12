@@ -216,3 +216,51 @@ def delete_purchase(purchase_id):
 
     # 重算加权平均成本
     recalc_avg_cost(product_id)
+
+
+def batch_delete_purchases(purchase_ids):
+    """
+    批量删除采购记录：
+    1. 遍历所有记录，回退库存
+    2. 删除所有记录
+    3. 对涉及的商品重算加权平均成本
+    返回删除的记录数
+    """
+    if not purchase_ids:
+        return 0
+
+    # 获取所有要删除的记录
+    placeholders = ','.join(['?'] * len(purchase_ids))
+    records = query_all(
+        f"SELECT id, product_id, quantity FROM purchases WHERE id IN ({placeholders})",
+        purchase_ids
+    )
+    if not records:
+        return 0
+
+    # 收集涉及的商品ID
+    product_ids = set(r['product_id'] for r in records)
+
+    conn = get_db()
+    try:
+        conn.execute('BEGIN')
+        for r in records:
+            # 回退库存
+            conn.execute(
+                "UPDATE products SET current_stock = current_stock - ?, updated_at = datetime('now','localtime') WHERE id = ?",
+                (float(r['quantity']), r['product_id'])
+            )
+            # 删除记录
+            conn.execute("DELETE FROM purchases WHERE id = ?", (r['id'],))
+        conn.execute('COMMIT')
+    except Exception:
+        conn.execute('ROLLBACK')
+        raise
+    finally:
+        conn.close()
+
+    # 对每个涉及的商品重算加权平均成本
+    for pid in product_ids:
+        recalc_avg_cost(pid)
+
+    return len(records)
