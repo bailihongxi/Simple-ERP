@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}首页总览 - 进销存管理{% endblock %}
+{% block page_title %}首页总览{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary" onclick="location.href='/purchase/?action=new'">快速进货</button>
+<button class="btn btn-success" onclick="location.href='/sales/?action=new'">快速销售</button>
+{% endblock %}
+
+{% block content %}
+<!-- 第一排指标 -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">今日进货</div>
+        <div class="stat-value blue">{{ '%.2f'|format(today_purchase.total) }}</div>
+        <div class="stat-sub">{{ today_purchase.count }} 笔</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">今日销售</div>
+        <div class="stat-value green">{{ '%.2f'|format(today_sale.total) }}</div>
+        <div class="stat-sub">{{ today_sale.count }} 笔，毛利 {{ '%.2f'|format(today_sale.profit) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">本月毛利</div>
+        <div class="stat-value {% if month_sale.profit >= 0 %}green{% else %}red{% endif %}">{{ '%.2f'|format(month_sale.profit) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">库存总价值</div>
+        <div class="stat-value orange">{{ '%.2f'|format(inventory_value) }}</div>
+        <div class="stat-sub">{{ inventory_summary.total_products }} 种商品，{{ '%.2f'|format(inventory_summary.total_stock) }} 件</div>
+    </div>
+</div>
+
+<!-- 第二排指标 -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">本月进货</div>
+        <div class="stat-value">{{ '%.2f'|format(month_purchase.total) }}</div>
+        <div class="stat-sub">{{ month_purchase.count }} 笔</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">本月销售</div>
+        <div class="stat-value">{{ '%.2f'|format(month_sale.total) }}</div>
+        <div class="stat-sub">{{ month_sale.count }} 笔</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">应收总额</div>
+        <div class="stat-value orange">{{ '%.2f'|format(total_receivable) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">应付总额</div>
+        <div class="stat-value red">{{ '%.2f'|format(total_payable) }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3>低库存预警</h3>
+        <a href="/inventory/?low_stock=1" style="color:#3b82f6;font-size:13px;cursor:pointer;">查看全部</a>
+    </div>
+    {% if low_stock %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>商品名称</th>
+                    <th>当前库存</th>
+                    <th>预警值</th>
+                    <th>单位</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in low_stock %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td class="warning">{{ '%.2f'|format(item.current_stock) }}</td>
+                    <td>{{ '%.2f'|format(item.warning_stock) }}</td>
+                    <td>{{ item.unit or '-' }}</td>
+                    <td><a href="/purchase/?action=new" style="color:#3b82f6;cursor:pointer;">立即补货</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">暂无低库存商品</div>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom:16px;">近期交易记录</h3>
+    {% if recent_transactions %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>类型</th>
+                    <th>商品</th>
+                    <th>数量</th>
+                    <th>金额</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in recent_transactions %}
+                <tr>
+                    <td>{{ t.trans_date }}</td>
+                    <td>
+                        {% if t.type == 'purchase' %}
+                        <span class="tag tag-blue">采购</span>
+                        {% else %}
+                        <span class="tag tag-green">销售</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ t.product_name or '-' }}</td>
+                    <td>{{ t.quantity }}</td>
+                    <td>{{ '%.2f'|format(t.total_amount) }}</td>
+                    <td>
+                        {% if t.type == 'purchase' %}
+                        <a href="/purchase/" style="color:#3b82f6;cursor:pointer;">查看</a>
+                        {% else %}
+                        <a href="/sales/" style="color:#3b82f6;cursor:pointer;">查看</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">暂无交易记录</div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

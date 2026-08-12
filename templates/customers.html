@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}客户信息 - 进销存管理{% endblock %}
+{% block page_title %}客户信息{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-secondary" onclick="location.href='/customers/api/export'">导出</button>
+<button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">导入</button>
+<input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="doImport('/customers/api/import')">
+<button class="btn btn-secondary" onclick="location.href='/customers/api/template'">模板</button>
+<button class="btn btn-primary" onclick="openCustomerForm()">+ 新增客户</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="filter-bar">
+        <div class="form-group">
+            <label>客户名称</label>
+            <input type="text" id="filterKeyword" value="{{ keyword }}" placeholder="搜索客户名称">
+        </div>
+        <button class="btn btn-secondary" onclick="doFilter()">筛选</button>
+        <button class="btn btn-secondary" onclick="resetFilter()">重置</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>客户名称</th>
+                    <th>联系人</th>
+                    <th>电话</th>
+                    <th>地址</th>
+                    <th>应收余额</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td>{{ c.id }}</td>
+                    <td>{{ c.name }}</td>
+                    <td>{{ c.contact_person or '-' }}</td>
+                    <td>{{ c.phone or '-' }}</td>
+                    <td>{{ c.address or '-' }}</td>
+                    <td class="{% if c.receivable_balance > 0 %}warning{% endif %}">{{ '%.2f'|format(c.receivable_balance) }}</td>
+                    <td>{{ c.notes or '-' }}</td>
+                    <td>
+                        <div class="action-links">
+                            <a onclick="viewCustomer({{ c.id }})">详情</a>
+                            <a onclick="editCustomer({{ c.id }})">编辑</a>
+                            <a class="danger" onclick="deleteCustomer({{ c.id }})">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8"><div class="empty-state">暂无客户数据</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doFilter() {
+    var kw = document.getElementById('filterKeyword').value;
+    window.location.href = '/customers/?keyword=' + encodeURIComponent(kw);
+}
+function resetFilter() { window.location.href = '/customers/'; }
+
+function openCustomerForm(customer) {
+    var isEdit = !!customer;
+    var title = isEdit ? '编辑客户' : '新增客户';
+    var html = '<form id="customerForm">' +
+        '<div class="form-group"><label>客户名称 *</label><input type="text" name="name" value="' + (customer?customer.name:'') + '" required></div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>联系人</label><input type="text" name="contact_person" value="' + (customer?customer.contact_person:'') + '"></div>' +
+            '<div class="form-group"><label>电话</label><input type="text" name="phone" value="' + (customer?customer.phone:'') + '"></div>' +
+        '</div>' +
+        '<div class="form-group"><label>地址</label><input type="text" name="address" value="' + (customer?customer.address:'') + '"></div>' +
+        '<div class="form-group"><label>备注</label><textarea name="notes" rows="2">' + (customer?customer.notes:'') + '</textarea></div>' +
+        '</form>';
+    var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
+        '<button class="btn btn-primary" onclick="submitCustomer(' + (isEdit?customer.id:'null') + ')">保存</button>';
+    showModal(title, html, footer);
+}
+
+function submitCustomer(id) {
+    var form = document.getElementById('customerForm');
+    var fd = new FormData(form);
+    var url = id ? '/customers/api/update/' + id : '/customers/api/create';
+    ajaxSubmit(url, fd, 'POST', function() {
+        hideModal();
+        setTimeout(function(){ location.reload(); }, 500);
+    });
+}
+
+function editCustomer(id) {
+    fetch('/customers/api/get/' + id)
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (data.success) openCustomerForm(data.data);
+        else showToast(data.message, 'error');
+    });
+}
+
+function deleteCustomer(id) {
+    confirmDialog('确定要删除这个客户吗？', function() {
+        ajaxRequest('/customers/api/delete/' + id, null, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 500);
+        });
+    });
+}
+
+function viewCustomer(id) {
+    fetch('/customers/api/detail/' + id)
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (!data.success) { showToast(data.message, 'error'); return; }
+        var c = data.data;
+        var html = '<p><strong>名称：</strong>' + c.name + '</p>' +
+            '<p><strong>联系人：</strong>' + (c.contact_person||'-') + ' &nbsp; <strong>电话：</strong>' + (c.phone||'-') + '</p>' +
+            '<p><strong>地址：</strong>' + (c.address||'-') + '</p>' +
+            '<p><strong>应收余额：</strong><span style="color:#dc2626;font-weight:bold;font-size:16px;">' + fmtMoney(data.receivable) + '</span>' +
+            ' &nbsp; <button class="btn btn-sm btn-success" onclick="openReceiveForm(' + id + ', ' + data.receivable + ')">收款</button></p>' +
+            '<h4 style="margin:16px 0 8px;">历史销售记录</h4>';
+        if (data.sales.length === 0) {
+            html += '<p style="color:#94a3b8;">暂无销售记录</p>';
+        } else {
+            html += '<table><thead><tr><th>日期</th><th>商品</th><th>数量</th><th>单价</th><th>金额</th><th>毛利</th><th>方式</th></tr></thead><tbody>';
+            data.sales.forEach(function(s) {
+                html += '<tr><td>' + s.sale_date + '</td><td>' + (s.product_name||'-') + '</td><td>' + s.quantity + '</td><td>' + fmtMoney(s.unit_price) + '</td><td>' + fmtMoney(s.total_amount) + '</td><td>' + fmtMoney(s.profit) + '</td><td>' + (s.payment_type=='credit'?'赊账':'现结') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        html += '<h4 style="margin:16px 0 8px;">收款记录</h4>';
+        if (!data.payments || data.payments.length === 0) {
+            html += '<p style="color:#94a3b8;">暂无收款记录</p>';
+        } else {
+            html += '<table><thead><tr><th>日期</th><th>金额</th><th>备注</th></tr></thead><tbody>';
+            data.payments.forEach(function(p) {
+                html += '<tr><td>' + p.payment_date + '</td><td style="color:#16a34a;">+' + fmtMoney(p.amount) + '</td><td>' + (p.notes||'-') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        showModal('客户详情 - ' + c.name, html, '<button class="btn btn-secondary" onclick="hideModal()">关闭</button>');
+    });
+}
+
+function openReceiveForm(customerId, receivable) {
+    var html = '<form id="receiveForm">' +
+        '<div class="form-group"><label>当前应收余额</label><input type="text" value="' + fmtMoney(receivable) + '" readonly></div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>收款日期</label><input type="date" name="payment_date" value="' + new Date().toISOString().slice(0,10) + '"></div>' +
+            '<div class="form-group"><label>收款金额 *</label><input type="number" step="0.01" name="amount" required placeholder="请输入金额"></div>' +
+        '</div>' +
+        '<div class="form-group"><label>备注</label><input type="text" name="notes" placeholder="如：结清部分货款"></div>' +
+        '</form>';
+    var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
+        '<button class="btn btn-success" onclick="submitReceive(' + customerId + ')">确认收款</button>';
+    showModal('客户收款', html, footer);
+}
+
+function submitReceive(customerId) {
+    var form = document.getElementById('receiveForm');
+    var fd = new FormData(form);
+    ajaxSubmit('/customers/api/receive/' + customerId, fd, 'POST', function() {
+        hideModal();
+        setTimeout(function(){ location.reload(); }, 500);
+    });
+}
+</script>
+{% endblock %}

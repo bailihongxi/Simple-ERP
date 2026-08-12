@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}数据备份与恢复 - 进销存管理{% endblock %}
+{% block page_title %}数据备份与恢复{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary" onclick="createBackup()">一键备份</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="background:#fef3c7;padding:16px;border-radius:8px;margin-bottom:20px;">
+        <strong>温馨提示：</strong>
+        <ul style="margin-top:8px;padding-left:20px;line-height:1.8;">
+            <li>一键备份会将当前数据库文件复制到 backups 目录</li>
+            <li>恢复数据前会自动备份当前数据，防止误操作</li>
+            <li>恢复后请刷新页面以加载最新数据</li>
+            <li>建议定期备份重要数据</li>
+        </ul>
+    </div>
+
+    <h3 style="margin-bottom:16px;">备份列表</h3>
+    {% if backups %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>备份文件名</th>
+                    <th>创建时间</th>
+                    <th>文件大小</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in backups %}
+                <tr>
+                    <td>{{ b.filename }}</td>
+                    <td>{{ b.created_at }}</td>
+                    <td>{{ b.size_mb }} MB</td>
+                    <td class="action-links">
+                        <a onclick="restoreBackup('{{ b.filename }}')">恢复</a>
+                        <a class="danger" onclick="deleteBackup('{{ b.filename }}')">删除</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">暂无备份文件，点击右上角"一键备份"创建</div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function createBackup() {
+    ajaxSubmit('/backup/api/create', new FormData(), 'POST', function() {
+        setTimeout(function(){ location.reload(); }, 800);
+    });
+}
+
+function restoreBackup(filename) {
+    confirmDialog('确定要恢复备份 "' + filename + '" 吗？恢复前会自动备份当前数据。', function() {
+        var fd = new FormData();
+        fd.append('filename', filename);
+        ajaxSubmit('/backup/api/restore', fd, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 1500);
+        });
+    });
+}
+
+function deleteBackup(filename) {
+    confirmDialog('确定要删除备份 "' + filename + '" 吗？此操作不可恢复。', function() {
+        var fd = new FormData();
+        fd.append('filename', filename);
+        ajaxSubmit('/backup/api/delete', fd, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 800);
+        });
+    });
+}
+</script>
+{% endblock %}

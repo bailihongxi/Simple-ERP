@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}库存管理 - 进销存管理{% endblock %}
+{% block page_title %}库存管理{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-secondary" onclick="exportCurrent()">导出</button>
+<button class="btn btn-warning" onclick="openAdjustForm()">+ 库存盘点</button>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">商品种类</div>
+        <div class="stat-value blue">{{ summary.total_products }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">库存总数量</div>
+        <div class="stat-value">{{ '%.2f'|format(summary.total_stock) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">库存总价值</div>
+        <div class="stat-value green">{{ '%.2f'|format(summary.total_value) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">低库存预警</div>
+        <div class="stat-value red">{{ summary.low_stock_count }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="filter-bar">
+        <div class="form-group">
+            <label>分类</label>
+            <select id="filterCategory">
+                <option value="">全部分类</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if category==cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="display:flex;align-items:center;gap:6px;">
+            <input type="checkbox" id="filterLowStock" {% if low_stock_only %}checked{% endif %} onchange="doFilter()">
+            <label for="filterLowStock" style="margin:0;">只看低库存</label>
+        </div>
+        <button class="btn btn-secondary" onclick="doFilter()">筛选</button>
+        <button class="btn btn-secondary" onclick="resetFilter()">重置</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>商品名称</th>
+                    <th>分类</th>
+                    <th>单位</th>
+                    <th>当前库存</th>
+                    <th>平均成本</th>
+                    <th>库存价值</th>
+                    <th>预警值</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in inventory %}
+                <tr>
+                    <td>{{ item.id }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.category or '-' }}</td>
+                    <td>{{ item.unit or '-' }}</td>
+                    <td class="{% if item.is_low %}warning{% endif %}">{{ '%.2f'|format(item.current_stock) }}</td>
+                    <td>{{ '%.2f'|format(item.avg_cost) }}</td>
+                    <td>{{ '%.2f'|format(item.stock_value) }}</td>
+                    <td>{{ '%.2f'|format(item.warning_stock) }}</td>
+                    <td>
+                        {% if item.is_low %}
+                        <span class="tag tag-red">低库存</span>
+                        {% else %}
+                        <span class="tag tag-green">正常</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-links">
+                            <a onclick="viewLogs({{ item.id }}, '{{ item.name }}')">变动记录</a>
+                            <a onclick="openAdjustForm({{ item.id }})">盘点</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10"><div class="empty-state">暂无库存数据</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var products = {{ products|tojson }};
+
+function doFilter() {
+    var cat = document.getElementById('filterCategory').value;
+    var low = document.getElementById('filterLowStock').checked ? '1' : '';
+    window.location.href = '/inventory/?category=' + encodeURIComponent(cat) + '&low_stock=' + low;
+}
+function resetFilter() { window.location.href = '/inventory/'; }
+
+function exportCurrent() {
+    var cat = document.getElementById('filterCategory').value;
+    var low = document.getElementById('filterLowStock').checked ? '1' : '';
+    window.location.href = '/inventory/api/export?category=' + cat + '&low_stock=' + low;
+}
+
+function openAdjustForm(productId) {
+    var productOptions = '';
+    products.forEach(function(p) {
+        var sel = (productId && p.id == productId) ? 'selected' : '';
+        productOptions += '<option value="' + p.id + '" ' + sel + '>' + p.name + '（当前库存:' + p.current_stock + '）</option>';
+    });
+    var html = '<form id="adjustForm">' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>商品 *</label><select name="product_id" required onchange="onAdjProductChange()">' + productOptions + '</select></div>' +
+            '<div class="form-group"><label>盘点日期</label><input type="date" name="adjust_date" value="{{ today }}"></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>当前库存</label><input type="text" id="adjOldStock" readonly></div>' +
+            '<div class="form-group"><label>盘点后库存 *</label><input type="number" step="0.01" name="new_stock" id="adjNewStock" required></div>' +
+        '</div>' +
+        '<div class="form-group"><label>变动原因 *</label><input type="text" name="reason" placeholder="如：盘点差异、损耗、报溢" required></div>' +
+        '<div class="form-group"><label>备注</label><input type="text" name="notes"></div>' +
+        '</form>';
+    var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
+        '<button class="btn btn-primary" onclick="submitAdjust()">确认盘点</button>';
+    showModal('库存盘点', html, footer);
+    onAdjProductChange();
+}
+
+function onAdjProductChange() {
+    var sel = document.querySelector('select[name="product_id"]');
+    var p = products.find(function(x){return x.id == sel.value;});
+    if (p) {
+        document.getElementById('adjOldStock').value = p.current_stock;
+        document.getElementById('adjNewStock').value = p.current_stock;
+    }
+}
+
+function submitAdjust() {
+    var form = document.getElementById('adjustForm');
+    var fd = new FormData(form);
+    ajaxSubmit('/inventory/api/adjust', fd, 'POST', function() {
+        hideModal();
+        setTimeout(function(){ location.reload(); }, 500);
+    });
+}
+
+function viewLogs(productId, productName) {
+    fetch('/inventory/api/logs?product_id=' + productId)
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (!data.success) { showToast(data.message, 'error'); return; }
+        var html = '<h4 style="margin-bottom:12px;">' + productName + ' - 库存变动记录</h4>';
+        if (data.data.length === 0) {
+            html += '<p style="color:#94a3b8;">暂无变动记录</p>';
+        } else {
+            html += '<table><thead><tr><th>日期</th><th>类型</th><th>变动数量</th><th>备注</th></tr></thead><tbody>';
+            data.data.forEach(function(log) {
+                var cls = log.change_amount >= 0 ? 'color:#16a34a;' : 'color:#dc2626;';
+                html += '<tr><td>' + log.log_date + '</td><td>' + log.change_type + '</td><td style="' + cls + ';font-weight:bold;">' + (log.change_amount >= 0 ? '+' : '') + log.change_amount + '</td><td>' + (log.notes||'-') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        showModal('库存变动记录', html, '<button class="btn btn-secondary" onclick="hideModal()">关闭</button>');
+    });
+}
+</script>
+{% endblock %}

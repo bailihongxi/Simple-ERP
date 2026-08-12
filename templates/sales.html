@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}销售管理 - 进销存管理{% endblock %}
+{% block page_title %}销售管理{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-secondary" onclick="exportCurrent()">导出</button>
+<button class="btn btn-primary" onclick="openSaleForm()">+ 新增销售</button>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">销售总金额</div>
+        <div class="stat-value blue">{{ '%.2f'|format(stats.total_amount) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">销售总成本</div>
+        <div class="stat-value">{{ '%.2f'|format(stats.total_cost) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">销售总毛利</div>
+        <div class="stat-value green">{{ '%.2f'|format(stats.total_profit) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">销售笔数</div>
+        <div class="stat-value">{{ stats.count }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="filter-bar">
+        <div class="form-group">
+            <label>开始日期</label>
+            <input type="date" id="filterDateStart" value="{{ date_start }}">
+        </div>
+        <div class="form-group">
+            <label>结束日期</label>
+            <input type="date" id="filterDateEnd" value="{{ date_end }}">
+        </div>
+        <div class="form-group">
+            <label>客户</label>
+            <select id="filterCustomer">
+                <option value="">全部客户</option>
+                {% for c in customers %}
+                <option value="{{ c.id }}" {% if customer_id|string==c.id|string %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>商品名称</label>
+            <input type="text" id="filterKeyword" value="{{ keyword }}" placeholder="搜索商品">
+        </div>
+        <button class="btn btn-secondary" onclick="doFilter()">筛选</button>
+        <button class="btn btn-secondary" onclick="resetFilter()">重置</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>商品</th>
+                    <th>客户</th>
+                    <th>数量</th>
+                    <th>单价</th>
+                    <th>总金额</th>
+                    <th>成本</th>
+                    <th>毛利</th>
+                    <th>付款方式</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sales %}
+                <tr>
+                    <td>{{ s.sale_date }}</td>
+                    <td>{{ s.product_name or '-' }}</td>
+                    <td>{{ s.customer_name or '-' }}</td>
+                    <td>{{ s.quantity }}</td>
+                    <td>{{ '%.2f'|format(s.unit_price) }}</td>
+                    <td>{{ '%.2f'|format(s.total_amount) }}</td>
+                    <td>{{ '%.2f'|format(s.cost_amount) }}</td>
+                    <td class="{% if s.profit < 0 %}warning{% endif %}">{{ '%.2f'|format(s.profit) }}</td>
+                    <td>
+                        {% if s.payment_type == 'credit' %}
+                        <span class="tag tag-orange">赊账</span>
+                        {% else %}
+                        <span class="tag tag-green">现结</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="action-links">
+                            <a onclick="editSale({{ s.id }})">编辑</a>
+                            <a class="danger" onclick="deleteSale({{ s.id }})">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10"><div class="empty-state">暂无销售记录</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var products = {{ products|tojson }};
+var customers = {{ customers|tojson }};
+var autoOpen = "{{ action }}" === "new";
+
+function doFilter() {
+    var ds = document.getElementById('filterDateStart').value;
+    var de = document.getElementById('filterDateEnd').value;
+    var cust = document.getElementById('filterCustomer').value;
+    var kw = document.getElementById('filterKeyword').value;
+    var url = '/sales/?date_start=' + ds + '&date_end=' + de + '&customer_id=' + cust + '&keyword=' + encodeURIComponent(kw);
+    window.location.href = url;
+}
+function resetFilter() { window.location.href = '/sales/'; }
+
+function exportCurrent() {
+    var ds = document.getElementById('filterDateStart').value;
+    var de = document.getElementById('filterDateEnd').value;
+    var cust = document.getElementById('filterCustomer').value;
+    var kw = document.getElementById('filterKeyword').value;
+    window.location.href = '/sales/api/export?date_start=' + ds + '&date_end=' + de + '&customer_id=' + cust + '&keyword=' + encodeURIComponent(kw);
+}
+
+function openSaleForm(record) {
+    var isEdit = !!record;
+    var title = isEdit ? '编辑销售' : '新增销售';
+    var productOptions = '';
+    products.forEach(function(p) {
+        var sel = (record && record.product_id == p.id) ? 'selected' : '';
+        productOptions += '<option value="' + p.id + '" ' + sel + '>' + p.name + '（库存:' + p.current_stock + '）</option>';
+    });
+    var customerOptions = '<option value="">散客</option>';
+    customers.forEach(function(c) {
+        var sel = (record && record.customer_id == c.id) ? 'selected' : '';
+        customerOptions += '<option value="' + c.id + '" ' + sel + '>' + c.name + '</option>';
+    });
+    var html = '<form id="saleForm">' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>销售日期 *</label><input type="date" name="sale_date" value="' + (record?record.sale_date:'{{ today }}') + '" required></div>' +
+            '<div class="form-group"><label>商品 *</label><select name="product_id" required onchange="onProductChange()">' + productOptions + '</select></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>客户</label><select name="customer_id">' + customerOptions + '</select></div>' +
+            '<div class="form-group"><label>付款方式</label><select name="payment_type"><option value="cash" ' + (record&&record.payment_type=='cash'?'selected':'') + '>现结</option><option value="credit" ' + (record&&record.payment_type=='credit'?'selected':'') + '>赊账</option></select></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>数量 *</label><input type="number" step="0.01" name="quantity" id="fldQuantity" value="' + (record?record.quantity:'') + '" required oninput="calcTotal()"></div>' +
+            '<div class="form-group"><label>单价 *</label><input type="number" step="0.01" name="unit_price" id="fldPrice" value="' + (record?record.unit_price:'') + '" required oninput="calcTotal()"></div>' +
+            '<div class="form-group"><label>总金额</label><input type="text" id="fldTotal" readonly value="' + (record?record.total_amount.toFixed(2):'0.00') + '"></div>' +
+        '</div>' +
+        '<div class="form-group"><label>备注</label><input type="text" name="notes" value="' + (record?record.notes:'') + '"></div>' +
+        '</form>';
+    var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
+        '<button class="btn btn-primary" onclick="submitSale(' + (isEdit?record.id:'null') + ')">保存</button>';
+    showModal(title, html, footer);
+    if (!isEdit) onProductChange();
+}
+
+function onProductChange() {
+    var sel = document.querySelector('select[name="product_id"]');
+    var p = products.find(function(x){return x.id == sel.value;});
+    if (p && !document.getElementById('fldPrice').value) {
+        document.getElementById('fldPrice').value = p.sale_price;
+        calcTotal();
+    }
+}
+
+function calcTotal() {
+    var q = parseFloat(document.getElementById('fldQuantity').value) || 0;
+    var p = parseFloat(document.getElementById('fldPrice').value) || 0;
+    document.getElementById('fldTotal').value = (q * p).toFixed(2);
+}
+
+function submitSale(id) {
+    var form = document.getElementById('saleForm');
+    var fd = new FormData(form);
+    var url = id ? '/sales/api/update/' + id : '/sales/api/create';
+    ajaxSubmit(url, fd, 'POST', function() {
+        hideModal();
+        setTimeout(function(){ location.reload(); }, 500);
+    });
+}
+
+function editSale(id) {
+    fetch('/sales/api/get/' + id)
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (data.success) openSaleForm(data.data);
+        else showToast(data.message, 'error');
+    });
+}
+
+function deleteSale(id) {
+    confirmDialog('确定删除这条销售记录吗？删除后库存会自动回退。', function() {
+        ajaxRequest('/sales/api/delete/' + id, null, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 500);
+        });
+    });
+}
+
+if (autoOpen) {
+    setTimeout(function(){ openSaleForm(); }, 300);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}供应商信息 - 进销存管理{% endblock %}
+{% block page_title %}供应商信息{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-secondary" onclick="location.href='/suppliers/api/export'">导出</button>
+<button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">导入</button>
+<input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="doImport('/suppliers/api/import')">
+<button class="btn btn-secondary" onclick="location.href='/suppliers/api/template'">模板</button>
+<button class="btn btn-primary" onclick="openSupplierForm()">+ 新增供应商</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="filter-bar">
+        <div class="form-group">
+            <label>供应商名称</label>
+            <input type="text" id="filterKeyword" value="{{ keyword }}" placeholder="搜索供应商名称">
+        </div>
+        <button class="btn btn-secondary" onclick="doFilter()">筛选</button>
+        <button class="btn btn-secondary" onclick="resetFilter()">重置</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>供应商名称</th>
+                    <th>联系人</th>
+                    <th>电话</th>
+                    <th>地址</th>
+                    <th>应付余额</th>
+                    <th>备注</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suppliers %}
+                <tr>
+                    <td>{{ s.id }}</td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.contact_person or '-' }}</td>
+                    <td>{{ s.phone or '-' }}</td>
+                    <td>{{ s.address or '-' }}</td>
+                    <td class="{% if s.payable_balance > 0 %}warning{% endif %}">{{ '%.2f'|format(s.payable_balance) }}</td>
+                    <td>{{ s.notes or '-' }}</td>
+                    <td>
+                        <div class="action-links">
+                            <a onclick="viewSupplier({{ s.id }})">详情</a>
+                            <a onclick="editSupplier({{ s.id }})">编辑</a>
+                            <a class="danger" onclick="deleteSupplier({{ s.id }})">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8"><div class="empty-state">暂无供应商数据</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doFilter() {
+    var kw = document.getElementById('filterKeyword').value;
+    window.location.href = '/suppliers/?keyword=' + encodeURIComponent(kw);
+}
+function resetFilter() { window.location.href = '/suppliers/'; }
+
+function openSupplierForm(supplier) {
+    var isEdit = !!supplier;
+    var title = isEdit ? '编辑供应商' : '新增供应商';
+    var html = '<form id="supplierForm">' +
+        '<div class="form-group"><label>供应商名称 *</label><input type="text" name="name" value="' + (supplier?supplier.name:'') + '" required></div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>联系人</label><input type="text" name="contact_person" value="' + (supplier?supplier.contact_person:'') + '"></div>' +
+            '<div class="form-group"><label>电话</label><input type="text" name="phone" value="' + (supplier?supplier.phone:'') + '"></div>' +
+        '</div>' +
+        '<div class="form-group"><label>地址</label><input type="text" name="address" value="' + (supplier?supplier.address:'') + '"></div>' +
+        '<div class="form-group"><label>备注</label><textarea name="notes" rows="2">' + (supplier?supplier.notes:'') + '</textarea></div>' +
+        '</form>';
+    var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
+        '<button class="btn btn-primary" onclick="submitSupplier(' + (isEdit?supplier.id:'null') + ')">保存</button>';
+    showModal(title, html, footer);
+}
+
+function submitSupplier(id) {
+    var form = document.getElementById('supplierForm');
+    var fd = new FormData(form);
+    var url = id ? '/suppliers/api/update/' + id : '/suppliers/api/create';
+    ajaxSubmit(url, fd, 'POST', function() {
+        hideModal();
+        setTimeout(function(){ location.reload(); }, 500);
+    });
+}
+
+function editSupplier(id) {
+    fetch('/suppliers/api/get/' + id)
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (data.success) openSupplierForm(data.data);
+        else showToast(data.message, 'error');
+    });
+}
+
+function deleteSupplier(id) {
+    confirmDialog('确定要删除这个供应商吗？', function() {
+        ajaxRequest('/suppliers/api/delete/' + id, null, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 500);
+        });
+    });
+}
+
+function viewSupplier(id) {
+    fetch('/suppliers/api/detail/' + id)
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (!data.success) { showToast(data.message, 'error'); return; }
+        var s = data.data;
+        var html = '<p><strong>名称：</strong>' + s.name + '</p>' +
+            '<p><strong>联系人：</strong>' + (s.contact_person||'-') + ' &nbsp; <strong>电话：</strong>' + (s.phone||'-') + '</p>' +
+            '<p><strong>地址：</strong>' + (s.address||'-') + '</p>' +
+            '<p><strong>应付余额：</strong><span style="color:#dc2626;font-weight:bold;font-size:16px;">' + fmtMoney(data.payable) + '</span>' +
+            ' &nbsp; <button class="btn btn-sm btn-primary" onclick="openPayForm(' + id + ', ' + data.payable + ')">付款</button></p>' +
+            '<h4 style="margin:16px 0 8px;">历史采购记录</h4>';
+        if (data.purchases.length === 0) {
+            html += '<p style="color:#94a3b8;">暂无采购记录</p>';
+        } else {
+            html += '<table><thead><tr><th>日期</th><th>商品</th><th>数量</th><th>单价</th><th>金额</th><th>方式</th></tr></thead><tbody>';
+            data.purchases.forEach(function(p) {
+                html += '<tr><td>' + p.purchase_date + '</td><td>' + (p.product_name||'-') + '</td><td>' + p.quantity + '</td><td>' + fmtMoney(p.unit_price) + '</td><td>' + fmtMoney(p.total_amount) + '</td><td>' + (p.payment_type=='credit'?'赊账':'现结') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        html += '<h4 style="margin:16px 0 8px;">付款记录</h4>';
+        if (!data.payments || data.payments.length === 0) {
+            html += '<p style="color:#94a3b8;">暂无付款记录</p>';
+        } else {
+            html += '<table><thead><tr><th>日期</th><th>金额</th><th>备注</th></tr></thead><tbody>';
+            data.payments.forEach(function(p) {
+                html += '<tr><td>' + p.payment_date + '</td><td style="color:#dc2626;">-' + fmtMoney(p.amount) + '</td><td>' + (p.notes||'-') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+        }
+        showModal('供应商详情 - ' + s.name, html, '<button class="btn btn-secondary" onclick="hideModal()">关闭</button>');
+    });
+}
+
+function openPayForm(supplierId, payable) {
+    var html = '<form id="payForm">' +
+        '<div class="form-group"><label>当前应付余额</label><input type="text" value="' + fmtMoney(payable) + '" readonly></div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>付款日期</label><input type="date" name="payment_date" value="' + new Date().toISOString().slice(0,10) + '"></div>' +
+            '<div class="form-group"><label>付款金额 *</label><input type="number" step="0.01" name="amount" required placeholder="请输入金额"></div>' +
+        '</div>' +
+        '<div class="form-group"><label>备注</label><input type="text" name="notes" placeholder="如：结清部分货款"></div>' +
+        '</form>';
+    var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
+        '<button class="btn btn-primary" onclick="submitPay(' + supplierId + ')">确认付款</button>';
+    showModal('供应商付款', html, footer);
+}
+
+function submitPay(supplierId) {
+    var form = document.getElementById('payForm');
+    var fd = new FormData(form);
+    ajaxSubmit('/suppliers/api/pay/' + supplierId, fd, 'POST', function() {
+        hideModal();
+        setTimeout(function(){ location.reload(); }, 500);
+    });
+}
+</script>
+{% endblock %}

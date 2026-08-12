@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}财务信息 - 进销存管理{% endblock %}
+{% block page_title %}财务信息{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="filter-bar">
+        <div class="form-group">
+            <label>开始日期</label>
+            <input type="date" id="filterDateStart" value="{{ date_start }}">
+        </div>
+        <div class="form-group">
+            <label>结束日期</label>
+            <input type="date" id="filterDateEnd" value="{{ date_end }}">
+        </div>
+        <div class="form-group">
+            <label>收付款类型</label>
+            <select id="filterPtype">
+                <option value="">全部</option>
+                <option value="receive" {% if ptype=='receive' %}selected{% endif %}>收款</option>
+                <option value="pay" {% if ptype=='pay' %}selected{% endif %}>付款</option>
+            </select>
+        </div>
+        <button class="btn btn-secondary" onclick="doFilter()">筛选</button>
+        <button class="btn btn-secondary" onclick="resetFilter()">重置</button>
+        <button class="btn btn-secondary" onclick="exportCurrent()">导出</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">总收入</div>
+        <div class="stat-value green">{{ '%.2f'|format(summary.total_income) }}</div>
+        <div class="stat-sub">现结销售 {{ '%.2f'|format(summary.cash_sales) }} + 收款 {{ '%.2f'|format(summary.received) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">总支出</div>
+        <div class="stat-value red">{{ '%.2f'|format(summary.total_expense) }}</div>
+        <div class="stat-sub">现结采购 {{ '%.2f'|format(summary.cash_purchases) }} + 付款 {{ '%.2f'|format(summary.paid) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">净利润</div>
+        <div class="stat-value {% if summary.net_profit >= 0 %}green{% else %}red{% endif %}">{{ '%.2f'|format(summary.net_profit) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">销售毛利</div>
+        <div class="stat-value blue">{{ '%.2f'|format(summary.gross_profit) }}</div>
+        <div class="stat-sub">毛利率 {{ '%.2f'|format(summary.gross_margin) }}%</div>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">应收总额</div>
+        <div class="stat-value orange">{{ '%.2f'|format(summary.total_receivable) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">应付总额</div>
+        <div class="stat-value orange">{{ '%.2f'|format(summary.total_payable) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">销售总额</div>
+        <div class="stat-value">{{ '%.2f'|format(summary.sales_total) }}</div>
+        <div class="stat-sub">{{ summary.sales_count }} 笔</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom:16px;">近6个月收支趋势</h3>
+    <div class="trend-chart">
+        {% set max_val = namespace(value=1) %}
+        {% for t in trend %}
+            {% if t.income > max_val.value %}{% set max_val.value = t.income %}{% endif %}
+            {% if t.expense > max_val.value %}{% set max_val.value = t.expense %}{% endif %}
+            {% if t.gross_profit > max_val.value %}{% set max_val.value = t.gross_profit %}{% endif %}
+        {% endfor %}
+        <div class="trend-bars">
+            {% for t in trend %}
+            <div class="trend-col">
+                <div class="trend-bar-group">
+                    <div class="trend-bar income" style="height:{{ (t.income / max_val.value * 120)|int if max_val.value > 0 else 0 }}px;" title="收入 {{ '%.2f'|format(t.income) }}"></div>
+                    <div class="trend-bar expense" style="height:{{ (t.expense / max_val.value * 120)|int if max_val.value > 0 else 0 }}px;" title="支出 {{ '%.2f'|format(t.expense) }}"></div>
+                    <div class="trend-bar profit" style="height:{{ (t.gross_profit / max_val.value * 120)|int if max_val.value > 0 else 0 }}px;" title="毛利 {{ '%.2f'|format(t.gross_profit) }}"></div>
+                </div>
+                <div class="trend-label">{{ t.month }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="trend-legend">
+            <span><i class="legend-dot" style="background:#16a34a;"></i>收入</span>
+            <span><i class="legend-dot" style="background:#dc2626;"></i>支出</span>
+            <span><i class="legend-dot" style="background:#2563eb;"></i>毛利</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom:16px;">收付款记录</h3>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>类型</th>
+                    <th>往来对象</th>
+                    <th>金额</th>
+                    <th>备注</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td>{{ r.payment_date }}</td>
+                    <td>
+                        {% if r.type == 'receive' %}
+                        <span class="tag tag-green">收款</span>
+                        {% else %}
+                        <span class="tag tag-orange">付款</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ r.party_name or '-' }}</td>
+                    <td class="{% if r.type == 'receive' %}green{% else %}red{% endif %}">
+                        {% if r.type == 'receive' %}+{% else %}-{% endif %}{{ '%.2f'|format(r.amount) }}
+                    </td>
+                    <td>{{ r.notes or '-' }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5"><div class="empty-state">暂无收付款记录</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function doFilter() {
+    var ds = document.getElementById('filterDateStart').value;
+    var de = document.getElementById('filterDateEnd').value;
+    var pt = document.getElementById('filterPtype').value;
+    window.location.href = '/finance/?date_start=' + ds + '&date_end=' + de + '&ptype=' + pt;
+}
+function resetFilter() { window.location.href = '/finance/'; }
+function exportCurrent() {
+    var ds = document.getElementById('filterDateStart').value;
+    var de = document.getElementById('filterDateEnd').value;
+    var pt = document.getElementById('filterPtype').value;
+    window.location.href = '/finance/api/export?date_start=' + ds + '&date_end=' + de + '&ptype=' + pt;
+}
+</script>
+{% endblock %}

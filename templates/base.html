@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}进销存管理{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="logo">进销存管理</div>
+            <nav class="nav">
+                <a href="{{ url_for('dashboard.index') }}" class="nav-item {% if active_page=='dashboard' %}active{% endif %}">首页总览</a>
+                <a href="{{ url_for('purchase.index') }}" class="nav-item {% if active_page=='purchase' %}active{% endif %}">采购管理</a>
+                <a href="{{ url_for('sales.index') }}" class="nav-item {% if active_page=='sales' %}active{% endif %}">销售管理</a>
+                <a href="{{ url_for('inventory.index') }}" class="nav-item {% if active_page=='inventory' %}active{% endif %}">库存管理</a>
+                <a href="{{ url_for('products.index') }}" class="nav-item {% if active_page=='products' %}active{% endif %}">产品信息</a>
+                <a href="{{ url_for('suppliers.index') }}" class="nav-item {% if active_page=='suppliers' %}active{% endif %}">供应商信息</a>
+                <a href="{{ url_for('customers.index') }}" class="nav-item {% if active_page=='customers' %}active{% endif %}">客户信息</a>
+                <a href="{{ url_for('finance.index') }}" class="nav-item {% if active_page=='finance' %}active{% endif %}">财务信息</a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{{ url_for('backup.index') }}" class="nav-item small">数据备份/恢复</a>
+            </div>
+        </aside>
+        <main class="main">
+            <header class="topbar">
+                <h1>{% block page_title %}{% endblock %}</h1>
+                <div class="topbar-actions">
+                    {% block topbar_actions %}{% endblock %}
+                </div>
+            </header>
+            <div class="content">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <!-- 通用弹窗 -->
+    <div class="modal-overlay" id="modalOverlay" style="display:none;">
+        <div class="modal" id="modalBox">
+            <div class="modal-header">
+                <span id="modalTitle">标题</span>
+                <button class="modal-close" onclick="hideModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast" style="display:none;"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

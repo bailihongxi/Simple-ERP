@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}产品信息 - 进销存管理{% endblock %}
+{% block page_title %}产品信息{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-secondary" onclick="location.href='/products/api/export'">导出</button>
+<button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">导入</button>
+<input type="file" id="importFile" accept=".xlsx,.xls" style="display:none" onchange="doImport('/products/api/import')">
+<button class="btn btn-secondary" onclick="location.href='/products/api/template'">模板</button>
+<button class="btn btn-primary" onclick="openProductForm()">+ 新增产品</button>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="filter-bar">
+        <div class="form-group">
+            <label>商品名称</label>
+            <input type="text" id="filterKeyword" value="{{ keyword }}" placeholder="搜索商品名称">
+        </div>
+        <div class="form-group">
+            <label>分类</label>
+            <select id="filterCategory">
+                <option value="">全部分类</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if category==cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-secondary" onclick="doFilter()">筛选</button>
+        <button class="btn btn-secondary" onclick="resetFilter()">重置</button>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>商品名称</th>
+                    <th>分类</th>
+                    <th>单位</th>
+                    <th>进货价</th>
+                    <th>售价</th>
+                    <th>当前库存</th>
+                    <th>平均成本</th>
+                    <th>预警值</th>
+                    <th>默认供应商</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>{{ p.id }}</td>
+                    <td>{{ p.name }}</td>
+                    <td>{{ p.category or '-' }}</td>
+                    <td>{{ p.unit or '-' }}</td>
+                    <td>{{ '%.2f'|format(p.purchase_price) }}</td>
+                    <td>{{ '%.2f'|format(p.sale_price) }}</td>
+                    <td class="{% if p.warning_stock > 0 and p.current_stock <= p.warning_stock %}warning{% endif %}">{{ p.current_stock }}</td>
+                    <td>{{ '%.2f'|format(p.avg_cost) }}</td>
+                    <td>{{ p.warning_stock }}</td>
+                    <td>{{ p.supplier_name or '-' }}</td>
+                    <td>
+                        <div class="action-links">
+                            <a onclick="editProduct({{ p.id }})">编辑</a>
+                            <a class="danger" onclick="deleteProduct({{ p.id }})">删除</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="11"><div class="empty-state">暂无产品数据，点击右上角"新增产品"开始添加</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var suppliers = {{ suppliers|tojson }};
+
+function doFilter() {
+    var kw = document.getElementById('filterKeyword').value;
+    var cat = document.getElementById('filterCategory').value;
+    var url = '/products/?keyword=' + encodeURIComponent(kw) + '&category=' + encodeURIComponent(cat);
+    window.location.href = url;
+}
+function resetFilter() { window.location.href = '/products/'; }
+
+function openProductForm(product) {
+    var isEdit = !!product;
+    var title = isEdit ? '编辑产品' : '新增产品';
+    var supplierOptions = '<option value="">无</option>';
+    suppliers.forEach(function(s) {
+        var sel = (product && product.default_supplier_id == s.id) ? 'selected' : '';
+        supplierOptions += '<option value="' + s.id + '" ' + sel + '>' + s.name + '</option>';
+    });
+    var html = '<form id="productForm">' +
+        '<div class="form-group"><label>商品名称 *</label><input type="text" name="name" value="' + (product?product.name:'') + '" required></div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>分类</label><input type="text" name="category" value="' + (product?product.category:'') + '"></div>' +
+            '<div class="form-group"><label>单位</label><input type="text" name="unit" value="' + (product?product.unit:'') + '" placeholder="个/箱/斤"></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>进货价</label><input type="number" step="0.01" name="purchase_price" value="' + (product?product.purchase_price:0) + '"></div>' +
+            '<div class="form-group"><label>售价</label><input type="number" step="0.01" name="sale_price" value="' + (product?product.sale_price:0) + '"></div>' +
+        '</div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>低库存预警值</label><input type="number" step="0.01" name="warning_stock" value="' + (product?product.warning_stock:0) + '"></div>' +
+            '<div class="form-group"><label>默认供应商</label><select name="default_supplier_id">' + supplierOptions + '</select></div>' +
+        '</div>' +
+        '<div class="form-group"><label>备注</label><textarea name="notes" rows="2">' + (product?product.notes:'') + '</textarea></div>' +
+        '</form>';
+    var footer = '<button class="btn btn-secondary" onclick="hideModal()">取消</button>' +
+        '<button class="btn btn-primary" onclick="submitProduct(' + (isEdit?product.id:'null') + ')">保存</button>';
+    showModal(title, html, footer);
+}
+
+function submitProduct(id) {
+    var form = document.getElementById('productForm');
+    var fd = new FormData(form);
+    var url = id ? '/products/api/update/' + id : '/products/api/create';
+    ajaxSubmit(url, fd, 'POST', function() {
+        hideModal();
+        setTimeout(function(){ location.reload(); }, 500);
+    });
+}
+
+function editProduct(id) {
+    fetch('/products/api/get/' + id)
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (data.success) openProductForm(data.data);
+        else showToast(data.message, 'error');
+    });
+}
+
+function deleteProduct(id) {
+    confirmDialog('确定要删除这个产品吗？删除后不可恢复。', function() {
+        ajaxRequest('/products/api/delete/' + id, null, 'POST', function() {
+            setTimeout(function(){ location.reload(); }, 500);
+        });
+    });
+}
+</script>
+{% endblock %}
