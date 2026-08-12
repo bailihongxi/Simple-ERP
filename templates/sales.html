@@ -186,7 +186,10 @@ function openSaleForm(record) {
     var productOptions = '';
     products.forEach(function(p) {
         var sel = (record && record.product_id == p.id) ? 'selected' : '';
-        productOptions += '<option value="' + p.id + '" ' + sel + '>' + p.name + '（库存:' + p.current_stock + '）</option>';
+        var stock = parseFloat(p.current_stock) || 0;
+        var style = stock <= 0 ? ' style="color:#dc3545;font-weight:bold"' : '';
+        var stockLabel = stock <= 0 ? '（库存:0 无货）' : '（库存:' + p.current_stock + '）';
+        productOptions += '<option value="' + p.id + '" ' + sel + style + '>' + p.name + stockLabel + '</option>';
     });
     var customerOptions = '<option value="">散客</option>';
     customers.forEach(function(c) {
