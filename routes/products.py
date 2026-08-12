@@ -10,17 +10,23 @@ bp = Blueprint('products', __name__, url_prefix='/products')
 def index():
     keyword = request.args.get('keyword', '')
     category = request.args.get('category', '')
-    products = product_service.get_products(keyword=keyword, category=category)
+    brand = request.args.get('brand', '')
+    products = product_service.get_products(
+        keyword=keyword or None, category=category or None, brand=brand or None
+    )
     categories = product_service.get_categories()
+    brands = product_service.get_brands()
     suppliers = supplier_service.get_suppliers()
     return render_template('products.html',
                            active_page='products',
                            page_title='产品信息',
                            products=products,
                            categories=categories,
+                           brands=brands,
                            suppliers=suppliers,
                            keyword=keyword,
-                           category=category)
+                           category=category,
+                           brand=brand)
 
 
 @bp.route('/api/create', methods=['POST'])

@@ -1,8 +1,8 @@
 from database.db import query_all, query_one, execute
 
 
-def get_products(keyword=None, category=None):
-    """获取产品列表，支持按名称搜索和分类筛选"""
+def get_products(keyword=None, category=None, brand=None):
+    """获取产品列表，支持按名称搜索、分类筛选、品牌筛选"""
     sql = """
         SELECT p.*, s.name as supplier_name
         FROM products p
@@ -16,8 +16,18 @@ def get_products(keyword=None, category=None):
     if category:
         sql += " AND p.category = ?"
         params.append(category)
+    if brand:
+        sql += " AND p.brand = ?"
+        params.append(brand)
     sql += " ORDER BY p.id DESC"
     return query_all(sql, params)
+
+
+def get_brands():
+    """获取所有品牌（去重）"""
+    sql = "SELECT DISTINCT brand FROM products WHERE brand != '' ORDER BY brand"
+    rows = query_all(sql)
+    return [r['brand'] for r in rows if r['brand']]
 
 
 def get_product_by_id(product_id):
