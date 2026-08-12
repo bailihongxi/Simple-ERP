@@ -2,10 +2,10 @@ from database.db import query_all, query_one, execute, get_db
 from services import product_service
 
 
-def get_inventory_list(category=None, low_stock_only=False):
-    """获取库存列表，含库存价值"""
+def get_inventory_list(category=None, low_stock_only=False, brand=None, keyword=None):
+    """获取库存列表，含库存价值，支持分类、品牌、商品名称筛选"""
     sql = """
-        SELECT p.id, p.name, p.category, p.unit, p.current_stock, p.avg_cost,
+        SELECT p.id, p.name, p.brand, p.category, p.unit, p.current_stock, p.avg_cost,
                p.warning_stock, s.name as supplier_name
         FROM products p
         LEFT JOIN suppliers s ON p.default_supplier_id = s.id
@@ -15,6 +15,12 @@ def get_inventory_list(category=None, low_stock_only=False):
     if category:
         sql += " AND p.category = ?"
         params.append(category)
+    if brand:
+        sql += " AND p.brand = ?"
+        params.append(brand)
+    if keyword:
+        sql += " AND p.name LIKE ?"
+        params.append(f"%{keyword}%")
     if low_stock_only:
         sql += " AND p.warning_stock > 0 AND p.current_stock <= p.warning_stock"
     sql += " ORDER BY p.id DESC"

@@ -10,15 +10,20 @@ bp = Blueprint('inventory', __name__, url_prefix='/inventory')
 @bp.route('/')
 def index():
     category = request.args.get('category', '')
+    brand = request.args.get('brand', '')
+    keyword = request.args.get('keyword', '')
     low_stock_only = request.args.get('low_stock', '') == '1'
     tab = request.args.get('tab', 'list')
 
     inventory = inventory_service.get_inventory_list(
         category=category or None,
-        low_stock_only=low_stock_only
+        low_stock_only=low_stock_only,
+        brand=brand or None,
+        keyword=keyword or None
     )
     summary = inventory_service.get_inventory_summary()
     categories = product_service.get_categories()
+    brands = product_service.get_brands()
     products = product_service.get_products()
 
     return render_template('inventory.html',
@@ -27,8 +32,11 @@ def index():
                            inventory=inventory,
                            summary=summary,
                            categories=categories,
+                           brands=brands,
                            products=products,
                            category=category,
+                           brand=brand,
+                           keyword=keyword,
                            low_stock_only=low_stock_only,
                            tab=tab,
                            today=today_str())
@@ -66,12 +74,15 @@ def api_logs():
 @bp.route('/api/export')
 def api_export():
     category = request.args.get('category', '')
+    brand = request.args.get('brand', '')
+    keyword = request.args.get('keyword', '')
     low_stock_only = request.args.get('low_stock', '') == '1'
     inventory = inventory_service.get_inventory_list(
-        category=category or None, low_stock_only=low_stock_only
+        category=category or None, low_stock_only=low_stock_only,
+        brand=brand or None, keyword=keyword or None
     )
     mapping = [
-        ('商品名称', 'name'), ('分类', 'category'), ('单位', 'unit'),
+        ('商品名称', 'name'), ('品牌', 'brand'), ('分类', 'category'), ('单位', 'unit'),
         ('当前库存', 'current_stock'), ('平均成本', 'avg_cost'),
         ('库存价值', 'stock_value'), ('预警值', 'warning_stock'),
         ('默认供应商', 'supplier_name')
