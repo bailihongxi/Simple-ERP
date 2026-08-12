@@ -36,6 +36,8 @@
                 <tr>
                     <th>ID</th>
                     <th>商品名称</th>
+                    <th>品牌</th>
+                    <th>型号</th>
                     <th>分类</th>
                     <th>单位</th>
                     <th>进货价</th>
@@ -52,6 +54,8 @@
                 <tr>
                     <td>{{ p.id }}</td>
                     <td>{{ p.name }}</td>
+                    <td>{{ p.brand or '-' }}</td>
+                    <td>{{ p.model or '-' }}</td>
                     <td>{{ p.category or '-' }}</td>
                     <td>{{ p.unit or '-' }}</td>
                     <td>{{ '%.2f'|format(p.purchase_price) }}</td>
@@ -68,7 +72,7 @@
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="11"><div class="empty-state">暂无产品数据，点击右上角"新增产品"开始添加</div></td></tr>
+                <tr><td colspan="13"><div class="empty-state">暂无产品数据，点击右上角"新增产品"开始添加</div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -98,6 +102,10 @@ function openProductForm(product) {
     });
     var html = '<form id="productForm">' +
         '<div class="form-group"><label>商品名称 *</label><input type="text" name="name" value="' + (product?product.name:'') + '" required></div>' +
+        '<div class="form-row">' +
+            '<div class="form-group"><label>品牌</label><input type="text" name="brand" value="' + (product?product.brand:'') + '" placeholder="品牌名称"></div>' +
+            '<div class="form-group"><label>型号</label><input type="text" name="model" value="' + (product?product.model:'') + '" placeholder="型号规格"></div>' +
+        '</div>' +
         '<div class="form-row">' +
             '<div class="form-group"><label>分类</label><input type="text" name="category" value="' + (product?product.category:'') + '"></div>' +
             '<div class="form-group"><label>单位</label><input type="text" name="unit" value="' + (product?product.unit:'') + '" placeholder="个/箱/斤"></div>' +

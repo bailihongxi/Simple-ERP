@@ -15,11 +15,20 @@ def get_db():
 
 
 def init_db():
-    """初始化数据库，创建表结构"""
+    """初始化数据库，创建表结构，并处理字段迁移"""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     with open(SCHEMA_PATH, 'r', encoding='utf-8') as f:
         conn.executescript(f.read())
+
+    # 迁移：为已有products表添加brand和model字段
+    cursor = conn.execute("PRAGMA table_info(products)")
+    columns = [row[1] for row in cursor.fetchall()]
+    if 'brand' not in columns:
+        conn.execute("ALTER TABLE products ADD COLUMN brand TEXT DEFAULT ''")
+    if 'model' not in columns:
+        conn.execute("ALTER TABLE products ADD COLUMN model TEXT DEFAULT ''")
+
     conn.commit()
     conn.close()
 

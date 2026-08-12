@@ -62,7 +62,8 @@ def api_export():
     category = request.args.get('category', '')
     products = product_service.get_products(keyword=keyword or None, category=category or None)
     mapping = [
-        ('商品名称', 'name'), ('分类', 'category'), ('单位', 'unit'),
+        ('商品名称', 'name'), ('品牌', 'brand'), ('型号', 'model'),
+        ('分类', 'category'), ('单位', 'unit'),
         ('进货价', 'purchase_price'), ('售价', 'sale_price'),
         ('当前库存', 'current_stock'), ('平均成本', 'avg_cost'),
         ('预警值', 'warning_stock'), ('默认供应商', 'supplier_name'),
@@ -77,7 +78,8 @@ def api_export():
 def api_template():
     """下载产品导入模板"""
     mapping = [
-        ('商品名称', 'name'), ('分类', 'category'), ('单位', 'unit'),
+        ('商品名称', 'name'), ('品牌', 'brand'), ('型号', 'model'),
+        ('分类', 'category'), ('单位', 'unit'),
         ('进货价', 'purchase_price'), ('售价', 'sale_price'),
         ('预警值', 'warning_stock'), ('默认供应商', 'supplier_name'),
         ('备注', 'notes')
@@ -115,6 +117,8 @@ def api_import():
                 continue
             data = {
                 'name': name,
+                'brand': str(row.get('品牌', '') or ''),
+                'model': str(row.get('型号', '') or ''),
                 'category': str(row.get('分类', '') or ''),
                 'unit': str(row.get('单位', '') or ''),
                 'purchase_price': str(row.get('进货价', 0) or 0),

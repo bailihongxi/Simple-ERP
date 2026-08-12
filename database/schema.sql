@@ -2,6 +2,8 @@
 CREATE TABLE IF NOT EXISTS products (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    brand TEXT DEFAULT '',
+    model TEXT DEFAULT '',
     category TEXT DEFAULT '',
     unit TEXT DEFAULT '',
     purchase_price REAL DEFAULT 0,

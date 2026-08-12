@@ -41,12 +41,14 @@ def get_categories():
 def create_product(data):
     """创建产品"""
     sql = """
-        INSERT INTO products (name, category, unit, purchase_price, sale_price,
+        INSERT INTO products (name, brand, model, category, unit, purchase_price, sale_price,
                               default_supplier_id, warning_stock, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """
     return execute(sql, (
         data.get('name', ''),
+        data.get('brand', ''),
+        data.get('model', ''),
         data.get('category', ''),
         data.get('unit', ''),
         float(data.get('purchase_price', 0) or 0),
@@ -61,13 +63,16 @@ def update_product(product_id, data):
     """更新产品"""
     sql = """
         UPDATE products SET
-            name = ?, category = ?, unit = ?, purchase_price = ?, sale_price = ?,
+            name = ?, brand = ?, model = ?, category = ?, unit = ?,
+            purchase_price = ?, sale_price = ?,
             default_supplier_id = ?, warning_stock = ?, notes = ?,
             updated_at = datetime('now', 'localtime')
         WHERE id = ?
     """
     execute(sql, (
         data.get('name', ''),
+        data.get('brand', ''),
+        data.get('model', ''),
         data.get('category', ''),
         data.get('unit', ''),
         float(data.get('purchase_price', 0) or 0),
