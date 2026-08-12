@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, send_file
 from services import purchase_service, product_service, supplier_service
 from utils.helpers import today_str
-from utils.excel import export_with_key_mapping
+from utils.excel import export_with_key_mapping, import_from_excel
 import io
 
 bp = Blueprint('purchase', __name__, url_prefix='/purchase')
@@ -128,3 +128,86 @@ def api_export():
     content, filename = export_with_key_mapping(mapping, purchases, '采购记录.xlsx')
     return send_file(io.BytesIO(content), as_attachment=True, download_name=filename,
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@bp.route('/api/template')
+def api_template():
+    """下载采购导入模板"""
+    headers = ['商品名称*', '供应商名称', '采购日期*', '数量*', '单价*', '付款方式(现结/赊账)', '备注']
+    rows = [['示例商品', '示例供应商', '2026-08-12', '10', '5.50', '现结', '示例备注']]
+    from utils.excel import export_to_excel
+    content, filename = export_to_excel(headers, rows, '采购导入模板.xlsx')
+    return send_file(io.BytesIO(content), as_attachment=True, download_name=filename,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+
+@bp.route('/api/import', methods=['POST'])
+def api_import():
+    """从Excel导入采购记录"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': '请选择文件'})
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': '请选择文件'})
+
+        headers, rows = import_from_excel(file)
+        if not rows:
+            return jsonify({'success': False, 'message': '文件中没有数据'})
+
+        # 获取所有商品和供应商，用于名称匹配
+        all_products = product_service.get_products()
+        product_map = {p['name']: p['id'] for p in all_products}
+        all_suppliers = supplier_service.get_suppliers()
+        supplier_map = {s['name']: s['id'] for s in all_suppliers}
+
+        success_count = 0
+        errors = []
+
+        for idx, row in enumerate(rows, start=2):
+            try:
+                product_name = str(row.get('商品名称*', '') or row.get('商品名称', '') or '').strip()
+                supplier_name = str(row.get('供应商名称', '') or '').strip()
+                purchase_date = str(row.get('采购日期*', '') or row.get('采购日期', '') or '').strip()
+                quantity = str(row.get('数量*', '') or row.get('数量', '') or '').strip()
+                unit_price = str(row.get('单价*', '') or row.get('单价', '') or '').strip()
+                payment_type_raw = str(row.get('付款方式(现结/赊账)', '') or row.get('付款方式', '') or '').strip()
+                notes = str(row.get('备注', '') or '')
+
+                if not product_name:
+                    errors.append(f'第{idx}行：商品名称不能为空')
+                    continue
+                if product_name not in product_map:
+                    errors.append(f'第{idx}行：商品"{product_name}"不存在')
+                    continue
+                if not purchase_date:
+                    errors.append(f'第{idx}行：采购日期不能为空')
+                    continue
+                if not quantity or float(quantity) <= 0:
+                    errors.append(f'第{idx}行：数量必须大于0')
+                    continue
+
+                payment_type = 'credit' if payment_type_raw in ('赊账', 'credit') else 'cash'
+                supplier_id = supplier_map.get(supplier_name) if supplier_name else None
+
+                purchase_service.create_purchase({
+                    'purchase_date': purchase_date,
+                    'product_id': product_map[product_name],
+                    'supplier_id': supplier_id,
+                    'quantity': quantity,
+                    'unit_price': unit_price,
+                    'payment_type': payment_type,
+                    'notes': notes
+                })
+                success_count += 1
+            except Exception as e:
+                errors.append(f'第{idx}行：{str(e)}')
+
+        message = f'成功导入{success_count}条'
+        if errors:
+            message += f'，失败{len(errors)}条：' + '；'.join(errors[:5])
+            if len(errors) > 5:
+                message += f'等共{len(errors)}条错误'
+        return jsonify({'success': True, 'message': message, 'added': success_count, 'errors': errors})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'导入失败：{str(e)}'})
