@@ -1,0 +1,577 @@
+/* ==================== 基础样式 ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa;
+    color: #1e293b;
+    font-size: 14px;
+    line-height: 1.5;
+    padding-top: 56px;
+    padding-bottom: 60px;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+input, select, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+/* ==================== 顶部栏 ==================== */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    z-index: 100;
+}
+
+.topbar-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.back-btn, .settings-btn {
+    position: absolute;
+    top: 0;
+    height: 56px;
+    width: 56px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #475569;
+}
+
+.back-btn {
+    left: 0;
+}
+
+.back-icon {
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+.settings-btn {
+    right: 0;
+}
+
+.settings-icon {
+    font-size: 20px;
+}
+
+/* ==================== 内容区 ==================== */
+.content {
+    min-height: calc(100vh - 116px);
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+.page-content {
+    padding: 12px;
+}
+
+/* ==================== 底部导航 ==================== */
+.tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #fff;
+    display: flex;
+    border-top: 1px solid #e2e8f0;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tab-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: color 0.2s;
+    padding: 6px 0;
+}
+
+.tab-item.active {
+    color: #3b82f6;
+}
+
+.tab-icon {
+    font-size: 22px;
+    margin-bottom: 2px;
+}
+
+.tab-text {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* ==================== 首页 ==================== */
+.search-section {
+    padding: 16px 16px 8px;
+    background: #fff;
+}
+
+.search-box {
+    position: relative;
+    background: #f1f5f9;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+}
+
+.search-icon {
+    font-size: 16px;
+    margin-right: 8px;
+    color: #94a3b8;
+}
+
+.search-box input {
+    flex: 1;
+    height: 44px;
+    border: none;
+    background: none;
+    font-size: 15px;
+    color: #1e293b;
+    outline: none;
+}
+
+.search-box input::placeholder {
+    color: #94a3b8;
+}
+
+.quick-section {
+    padding: 12px 16px;
+    background: #fff;
+    margin-bottom: 12px;
+}
+
+.quick-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.quick-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 4px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.quick-item:active {
+    background: #f1f5f9;
+}
+
+.quick-icon {
+    font-size: 28px;
+    margin-bottom: 6px;
+}
+
+.quick-text {
+    font-size: 12px;
+    color: #475569;
+}
+
+.search-results {
+    padding: 0 12px 12px;
+}
+
+/* ==================== 统计卡片 ==================== */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.stat-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.stat-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.stat-value.blue { color: #3b82f6; }
+.stat-value.green { color: #16a34a; }
+.stat-value.red { color: #dc2626; }
+.stat-value.orange { color: #ea580c; }
+
+/* ==================== 筛选栏 ==================== */
+.filter-bar {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.filter-row:last-child {
+    margin-bottom: 0;
+}
+
+.filter-input, .filter-select {
+    flex: 1;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+    background: #f8fafc;
+    color: #1e293b;
+    outline: none;
+}
+
+.filter-input:focus, .filter-select:focus {
+    border-color: #3b82f6;
+    background: #fff;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #475569;
+    cursor: pointer;
+    height: 38px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* ==================== 按钮 ==================== */
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn:active {
+    opacity: 0.7;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.btn-success {
+    background: #16a34a;
+    color: #fff;
+}
+
+.btn-warning {
+    background: #f59e0b;
+    color: #fff;
+}
+
+.btn-danger {
+    background: #dc2626;
+    color: #fff;
+}
+
+/* ==================== 列表卡片 ==================== */
+.list-container {
+    padding-bottom: 12px;
+}
+
+.list-item {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.item-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 6px;
+}
+
+.item-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.item-tags {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.tag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.tag-green { background: #dcfce7; color: #166534; }
+.tag-red { background: #fee2e2; color: #991b1b; }
+.tag-orange { background: #ffedd5; color: #9a3412; }
+.tag-blue { background: #dbeafe; color: #1e40af; }
+.tag-gray { background: #f1f5f9; color: #475569; }
+
+/* ==================== 产品快捷入口卡片 ==================== */
+.product-quick-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.quick-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.quick-card:active {
+    opacity: 0.7;
+}
+
+.quick-card-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 6px;
+}
+
+.quick-card-value {
+    font-size: 17px;
+    font-weight: 600;
+    color: #3b82f6;
+    margin-bottom: 4px;
+}
+
+.quick-card-hint {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+/* ==================== 卡片 ==================== */
+.card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.card-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1e293b;
+}
+
+/* ==================== 空状态 ==================== */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #94a3b8;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.empty-text {
+    font-size: 14px;
+}
+
+/* ==================== Toast ==================== */
+.toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.8);
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 1000;
+    display: none;
+    max-width: 80%;
+    text-align: center;
+}
+
+/* ==================== 确认弹窗 ==================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 85%;
+    max-width: 320px;
+    overflow: hidden;
+}
+
+.modal-title {
+    padding: 16px 20px 8px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.modal-body {
+    padding: 0 20px 16px;
+    font-size: 14px;
+    color: #475569;
+    line-height: 1.6;
+}
+
+.modal-footer {
+    display: flex;
+    border-top: 1px solid #f1f5f9;
+}
+
+.modal-footer .btn {
+    flex: 1;
+    border-radius: 0;
+    height: 48px;
+    font-size: 15px;
+}
+
+.modal-footer .btn + .btn {
+    border-left: 1px solid #f1f5f9;
+}
+
+/* ==================== 数据概览 ==================== */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    text-align: center;
+}
+
+.summary-item-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: #3b82f6;
+}
+
+.summary-item-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 4px;
+}
+
+.summary-extra {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.8;
+}
+
+/* ==================== 低库存警告 ==================== */
+.low-stock {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* ==================== 金额 ==================== */
+.money {
+    font-weight: 600;
+}
+
+.money.negative {
+    color: #dc2626;
+}
