@@ -41,9 +41,9 @@ class TestMobileHTMLExists(unittest.TestCase):
         self.assertIn('销售', self.html)
         self.assertIn('我的', self.html)
 
-    def test_html_has_indexeddb_code(self):
-        """测试HTML包含IndexedDB相关代码"""
-        self.assertIn('indexedDB', self.html)
+    def test_html_has_storage_code(self):
+        """测试HTML包含本地存储相关代码"""
+        self.assertIn('localStorage', self.html)
         self.assertIn('initDB', self.html)
         self.assertIn('dbGetAll', self.html)
         self.assertIn('dbBulkAdd', self.html)

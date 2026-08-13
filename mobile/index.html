@@ -493,6 +493,15 @@
                 </div>
             </div>
             <div class="card">
+                <div class="card-title">数据管理</div>
+                <div style="padding:8px 0;">
+                    <button class="btn btn-warning" style="width:100%;padding:12px;" onclick="clearAllData()">清除所有数据</button>
+                </div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:8px;">
+                    清除后不可恢复，请谨慎操作
+                </div>
+            </div>
+            <div class="card">
                 <div class="card-title">关于</div>
                 <div style="font-size:13px;color:#64748b;line-height:1.8;">
                     <p>进销存管理系统 - 手机版</p>
@@ -531,96 +540,73 @@
     <div class="toast" id="toast"></div>
 
     <script>
-    // ==================== IndexedDB 封装 ====================
-    const DB_NAME = 'SimpleERP';
-    const DB_VERSION = 1;
-    let db = null;
+    // ==================== 数据存储封装（localStorage） ====================
+    const STORAGE_PREFIX = 'SimpleERP_';
 
     function initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                db = request.result;
-                resolve(db);
-            };
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains('products')) {
-                    db.createObjectStore('products', { keyPath: 'id' });
-                }
-                if (!db.objectStoreNames.contains('purchases')) {
-                    db.createObjectStore('purchases', { keyPath: 'id' });
-                }
-                if (!db.objectStoreNames.contains('sales')) {
-                    db.createObjectStore('sales', { keyPath: 'id' });
-                }
-                if (!db.objectStoreNames.contains('suppliers')) {
-                    db.createObjectStore('suppliers', { keyPath: 'id' });
-                }
-                if (!db.objectStoreNames.contains('customers')) {
-                    db.createObjectStore('customers', { keyPath: 'id' });
-                }
-                if (!db.objectStoreNames.contains('meta')) {
-                    db.createObjectStore('meta', { keyPath: 'key' });
-                }
-            };
-        });
+        // localStorage 不需要初始化，直接返回成功
+        return Promise.resolve();
     }
 
     function dbClearAll() {
         const stores = ['products', 'purchases', 'sales', 'suppliers', 'customers', 'meta'];
-        return Promise.all(stores.map(store => dbClear(store)));
-    }
-
-    function dbClear(storeName) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(storeName, 'readwrite');
-            const store = tx.objectStore(storeName);
-            const request = store.clear();
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
+        stores.forEach(store => {
+            try { localStorage.removeItem(STORAGE_PREFIX + store); } catch(e) {}
         });
+        return Promise.resolve();
     }
 
     function dbBulkAdd(storeName, items) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(storeName, 'readwrite');
-            const store = tx.objectStore(storeName);
-            items.forEach(item => store.add(item));
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
+        try {
+            if (storeName === 'meta') {
+                // meta 是 key-value 形式
+                const existing = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'meta') || '{}');
+                items.forEach(item => {
+                    existing[item.key] = item.value;
+                });
+                localStorage.setItem(STORAGE_PREFIX + 'meta', JSON.stringify(existing));
+            } else {
+                localStorage.setItem(STORAGE_PREFIX + storeName, JSON.stringify(items));
+            }
+            return Promise.resolve();
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
     function dbGetAll(storeName) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(storeName, 'readonly');
-            const store = tx.objectStore(storeName);
-            const request = store.getAll();
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
+        try {
+            if (storeName === 'meta') {
+                const data = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'meta') || '{}');
+                // 转成 { key, value } 格式数组
+                const result = Object.keys(data).map(k => ({ key: k, value: data[k] }));
+                return Promise.resolve(result);
+            }
+            const data = JSON.parse(localStorage.getItem(STORAGE_PREFIX + storeName) || '[]');
+            return Promise.resolve(data);
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
     function dbSetMeta(key, value) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction('meta', 'readwrite');
-            const store = tx.objectStore('meta');
-            store.put({ key, value });
-            tx.oncomplete = () => resolve();
-            tx.onerror = () => reject(tx.error);
-        });
+        try {
+            const data = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'meta') || '{}');
+            data[key] = value;
+            localStorage.setItem(STORAGE_PREFIX + 'meta', JSON.stringify(data));
+            return Promise.resolve();
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
     function dbGetMeta(key) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction('meta', 'readonly');
-            const store = tx.objectStore('meta');
-            const request = store.get(key);
-            request.onsuccess = () => resolve(request.result ? request.result.value : null);
-            request.onerror = () => reject(request.error);
-        });
+        try {
+            const data = JSON.parse(localStorage.getItem(STORAGE_PREFIX + 'meta') || '{}');
+            return Promise.resolve(data[key] !== undefined ? data[key] : null);
+        } catch (e) {
+            return Promise.reject(e);
+        }
     }
 
     // ==================== 工具函数 ====================
@@ -1118,6 +1104,17 @@
                     ${importTime ? '数据导入时间：' + importTime : ''}
                 </div>
             `;
+        }
+    }
+
+    async function clearAllData() {
+        if (!confirm('确定要清除所有数据吗？此操作不可恢复！')) return;
+        try {
+            await dbClearAll();
+            showToast('数据已清除');
+            loadPageData(currentTab);
+        } catch (e) {
+            showToast('清除失败：' + e.message);
         }
     }
 
