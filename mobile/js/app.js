@@ -187,8 +187,11 @@ function handleSearch() {
                 <span>${p.category || '-'}</span>
             </div>
             <div class="item-meta">
-                <span>库存：<span class="${isLow ? 'low-stock' : ''}">${fmtNum(p.current_stock)} ${p.unit || ''}</span></span>
+                <span>进货价：¥${fmtMoney(p.purchase_price)}</span>
                 <span>售价：¥${fmtMoney(p.sale_price)}</span>
+            </div>
+            <div class="item-meta">
+                <span>库存：<span class="${isLow ? 'low-stock' : ''}">${fmtNum(p.current_stock)} ${p.unit || ''}</span></span>
             </div>
             ${isLow ? '<div class="item-tags"><span class="tag tag-red">低库存</span></div>' : ''}
         </div>`;
