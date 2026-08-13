@@ -3,6 +3,7 @@
 {% block page_title %}数据备份与恢复{% endblock %}
 
 {% block topbar_actions %}
+<button class="btn btn-secondary" onclick="exportMobile()">导出手机端数据</button>
 <button class="btn btn-primary" onclick="createBackup()">一键备份</button>
 {% endblock %}
 
@@ -77,6 +78,10 @@ function deleteBackup(filename) {
             setTimeout(function(){ location.reload(); }, 800);
         });
     });
+}
+
+function exportMobile() {
+    window.location.href = '/backup/api/export_mobile';
 }
 </script>
 {% endblock %}

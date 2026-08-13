@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, jsonify
-from services import backup_service
+from flask import Blueprint, render_template, request, jsonify, send_file
+from services import backup_service, mobile_service
+import io
 
 bp = Blueprint('backup', __name__, url_prefix='/backup')
 
@@ -52,3 +53,18 @@ def api_delete():
         return jsonify({'success': False, 'message': str(e)})
     except Exception as e:
         return jsonify({'success': False, 'message': f'删除失败：{str(e)}'})
+
+
+@bp.route('/api/export_mobile')
+def api_export_mobile():
+    """导出手机端数据（JSON格式）"""
+    try:
+        json_data = mobile_service.export_mobile_data()
+        buf = io.BytesIO(json_data.encode('utf-8'))
+        buf.seek(0)
+        from utils.helpers import today_str
+        filename = f'手机端数据_{today_str()}.json'
+        return send_file(buf, as_attachment=True, download_name=filename,
+                         mimetype='application/json')
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'导出失败：{str(e)}'})
