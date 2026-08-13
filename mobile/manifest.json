@@ -4,18 +4,18 @@
   "description": "进销存管理系统手机版，离线查询产品、库存、采购、销售数据",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
+  "background_color": "#ff6b35",
+  "theme_color": "#ff6b35",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%233b82f6' rx='24'/%3E%3Ctext x='96' y='120' font-size='80' text-anchor='middle' fill='white' font-family='Arial'%3E📦%3C/text%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ff6b35'/%3E%3Cstop offset='100%25' style='stop-color:%23f7c948'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='192' height='192' fill='url(%23grad)' rx='40'/%3E%3Cpath d='M64 70 L96 55 L128 70 L128 130 L96 145 L64 130 Z' fill='white' fill-opacity='0.95'/%3E%3Cpath d='M64 70 L96 85 L128 70' fill='none' stroke='white' stroke-width='3' stroke-opacity='0.9'/%3E%3Cpath d='M96 85 L96 145' fill='none' stroke='white' stroke-width='3' stroke-opacity='0.9'/%3E%3Cpath d='M74 62 L96 50 L118 62' fill='none' stroke='white' stroke-width='3' stroke-opacity='0.7'/%3E%3C/svg%3E",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%233b82f6' rx='64'/%3E%3Ctext x='256' y='320' font-size='200' text-anchor='middle' fill='white' font-family='Arial'%3E📦%3C/text%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23ff6b35'/%3E%3Cstop offset='100%25' style='stop-color:%23f7c948'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='512' height='512' fill='url(%23grad)' rx='108'/%3E%3Cpath d='M170 186 L256 146 L342 186 L342 346 L256 386 L170 346 Z' fill='white' fill-opacity='0.95'/%3E%3Cpath d='M170 186 L256 226 L342 186' fill='none' stroke='white' stroke-width='8' stroke-opacity='0.9'/%3E%3Cpath d='M256 226 L256 386' fill='none' stroke='white' stroke-width='8' stroke-opacity='0.9'/%3E%3Cpath d='M196 164 L256 134 L316 164' fill='none' stroke='white' stroke-width='8' stroke-opacity='0.6'/%3E%3C/svg%3E",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
