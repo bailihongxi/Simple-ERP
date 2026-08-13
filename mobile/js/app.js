@@ -203,22 +203,7 @@ async function loadProducts() {
     // 填充品牌和分类下拉
     populateBrandCategory('productBrand', 'productCategory', allProducts);
 
-    // 计算快捷入口数据
-    updateProductQuickCards();
-
     renderProducts(allProducts);
-}
-
-function updateProductQuickCards() {
-    // 库存总价值
-    const invValue = allProducts.reduce((sum, p) =>
-        sum + parseFloat(p.current_stock || 0) * parseFloat(p.avg_cost || 0), 0);
-    document.getElementById('quickInvValue').textContent = '¥' + fmtMoney(invValue);
-
-    // 采购总金额
-    const purTotal = allPurchases.reduce((sum, p) =>
-        sum + parseFloat(p.total_amount || 0), 0);
-    document.getElementById('quickPurTotal').textContent = '¥' + fmtMoney(purTotal);
 }
 
 function populateBrandCategory(brandId, catId, products) {
@@ -561,6 +546,7 @@ async function loadMine() {
             </div>`;
     } else {
         const totalValue = products.reduce((sum, p) => sum + parseFloat(p.current_stock || 0) * parseFloat(p.avg_cost || 0), 0);
+        const purchaseTotal = purchases.reduce((sum, p) => sum + parseFloat(p.total_amount || 0), 0);
         container.innerHTML = `
             <div class="summary-grid">
                 <div class="summary-item">
@@ -578,6 +564,7 @@ async function loadMine() {
             </div>
             <div class="summary-extra">
                 库存总价值：¥${fmtMoney(totalValue)}<br>
+                采购总金额：¥${fmtMoney(purchaseTotal)}<br>
                 ${importTime ? '数据导入时间：' + importTime : ''}
             </div>
         `;
