@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>进销存 - 手机版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f7fa;
+            color: #1e293b;
+            font-size: 14px;
+            padding-bottom: 60px;
+            min-height: 100vh;
+        }
+
+        /* 顶部栏 */
+        .topbar {
+            background: #fff;
+            padding: 12px 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .topbar h1 {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        /* 内容区 */
+        .content {
+            padding: 12px;
+        }
+
+        /* 底部导航 */
+        .tabbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #fff;
+            display: flex;
+            border-top: 1px solid #e2e8f0;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 0;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 11px;
+            transition: color 0.2s;
+        }
+        .tab-item.active {
+            color: #3b82f6;
+        }
+        .tab-icon {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+
+        /* 卡片 */
+        .card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 6px;
+        }
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .stat-value.blue { color: #3b82f6; }
+        .stat-value.green { color: #16a34a; }
+        .stat-value.red { color: #dc2626; }
+        .stat-value.orange { color: #ea580c; }
+
+        /* 筛选栏 */
+        .filter-bar {
+            background: #fff;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .filter-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .filter-row:last-child { margin-bottom: 0; }
+        .filter-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #f8fafc;
+        }
+        .filter-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #fff;
+        }
+        .filter-select {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 13px;
+            background: #f8fafc;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.7; }
+        .btn-primary {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        .btn-success {
+            background: #16a34a;
+            color: #fff;
+        }
+        .btn-warning {
+            background: #f59e0b;
+            color: #fff;
+        }
+
+        /* 列表 */
+        .list-item {
+            background: #fff;
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .item-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+        .item-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .item-tags {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .tag-green { background: #dcfce7; color: #166534; }
+        .tag-red { background: #fee2e2; color: #991b1b; }
+        .tag-orange { background: #ffedd5; color: #9a3412; }
+        .tag-blue { background: #dbeafe; color: #1e40af; }
+        .tag-gray { background: #f1f5f9; color: #475569; }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #94a3b8;
+        }
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+        .empty-text {
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        /* 导入页面 */
+        .import-section {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .import-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .import-desc {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .import-btn {
+            display: inline-block;
+            padding: 14px 32px;
+            background: #3b82f6;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .import-btn:active { opacity: 0.7; }
+        #importFile { display: none; }
+
+        /* 数据概览 */
+        .data-summary {
+            background: #fff;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .summary-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            text-align: center;
+        }
+        .summary-item-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #3b82f6;
+        }
+        .summary-item-label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* 加载动画 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #64748b;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 12px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 页面切换 */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* 低库存警告 */
+        .low-stock { color: #dc2626; font-weight: 600; }
+
+        /* 金额 */
+        .money { font-weight: 600; }
+        .money.negative { color: #dc2626; }
+    </style>
+</head>
+<body>
+    <!-- 顶部栏 -->
+    <div class="topbar">
+        <h1 id="pageTitle">进销存</h1>
+    </div>
+
+    <!-- 内容区 -->
+    <div class="content">
+        <!-- 产品页面 -->
+        <div id="page-products" class="page">
+            <div class="filter-bar">
+                <div class="filter-row">
+                    <input type="text" class="filter-input" id="productKeyword" placeholder="搜索商品名称">
+                </div>
+                <div class="filter-row">
+                    <select class="filter-select" id="productBrand">
+                        <option value="">全部品牌</option>
+                    </select>
+                    <select class="filter-select" id="productCategory">
+                        <option value="">全部分类</option>
+                    </select>
+                </div>
+                <div class="filter-row">
+                    <button class="btn btn-primary" style="flex:1" onclick="filterProducts()">筛选</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="resetProductFilter()">重置</button>
+                </div>
+            </div>
+            <div id="productList"></div>
+        </div>
+
+        <!-- 库存页面 -->
+        <div id="page-inventory" class="page">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">商品种类</div>
+                    <div class="stat-value blue" id="invTotalProducts">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">库存总数量</div>
+                    <div class="stat-value" id="invTotalStock">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">库存总价值</div>
+                    <div class="stat-value green" id="invTotalValue">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">低库存预警</div>
+                    <div class="stat-value red" id="invLowStock">0</div>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-row">
+                    <input type="text" class="filter-input" id="invKeyword" placeholder="搜索商品名称">
+                </div>
+                <div class="filter-row">
+                    <select class="filter-select" id="invBrand">
+                        <option value="">全部品牌</option>
+                    </select>
+                    <select class="filter-select" id="invCategory">
+                        <option value="">全部分类</option>
+                    </select>
+                </div>
+                <div class="filter-row">
+                    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#475569;">
+                        <input type="checkbox" id="invLowOnly"> 只看低库存
+                    </label>
+                </div>
+                <div class="filter-row">
+                    <button class="btn btn-primary" style="flex:1" onclick="filterInventory()">筛选</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="resetInventoryFilter()">重置</button>
+                </div>
+            </div>
+            <div id="inventoryList"></div>
+        </div>
+
+        <!-- 采购页面 -->
+        <div id="page-purchase" class="page">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">采购笔数</div>
+                    <div class="stat-value blue" id="purCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">采购总金额</div>
+                    <div class="stat-value" id="purTotal">0</div>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-row">
+                    <input type="date" class="filter-input" id="purDateStart" placeholder="开始日期">
+                    <input type="date" class="filter-input" id="purDateEnd" placeholder="结束日期">
+                </div>
+                <div class="filter-row">
+                    <input type="text" class="filter-input" id="purKeyword" placeholder="搜索商品/供应商">
+                </div>
+                <div class="filter-row">
+                    <button class="btn btn-primary" style="flex:1" onclick="filterPurchases()">筛选</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="resetPurchaseFilter()">重置</button>
+                </div>
+            </div>
+            <div id="purchaseList"></div>
+        </div>
+
+        <!-- 销售页面 -->
+        <div id="page-sales" class="page">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">销售笔数</div>
+                    <div class="stat-value blue" id="saleCount">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">销售总金额</div>
+                    <div class="stat-value" id="saleTotal">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">总毛利</div>
+                    <div class="stat-value green" id="saleProfit">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">总成本</div>
+                    <div class="stat-value" id="saleCost">0</div>
+                </div>
+            </div>
+            <div class="filter-bar">
+                <div class="filter-row">
+                    <input type="date" class="filter-input" id="saleDateStart" placeholder="开始日期">
+                    <input type="date" class="filter-input" id="saleDateEnd" placeholder="结束日期">
+                </div>
+                <div class="filter-row">
+                    <input type="text" class="filter-input" id="saleKeyword" placeholder="搜索商品/客户">
+                </div>
+                <div class="filter-row">
+                    <button class="btn btn-primary" style="flex:1" onclick="filterSales()">筛选</button>
+                    <button class="btn btn-secondary" style="flex:1" onclick="resetSaleFilter()">重置</button>
+                </div>
+            </div>
+            <div id="salesList"></div>
+        </div>
+
+        <!-- 我的页面（数据导入） -->
+        <div id="page-mine" class="page">
+            <div class="card">
+                <div class="card-title">数据概览</div>
+                <div id="dataSummary">
+                    <div class="empty-state">
+                        <div class="empty-icon">📦</div>
+                        <div class="empty-text">暂无数据，请先导入数据</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">数据导入</div>
+                <div class="import-section">
+                    <div class="import-icon">📥</div>
+                    <div class="import-desc">
+                        从电脑端导出 JSON 数据文件，发送到手机后，点击下方按钮选择文件导入。<br><br>
+                        <strong>导入后会覆盖现有全部数据</strong>
+                    </div>
+                    <label class="import-btn" for="importFile">选择文件导入</label>
+                    <input type="file" id="importFile" accept=".json" onchange="handleImport(event)">
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title">关于</div>
+                <div style="font-size:13px;color:#64748b;line-height:1.8;">
+                    <p>进销存管理系统 - 手机版</p>
+                    <p>版本：v1.0</p>
+                    <p>数据保存在手机浏览器本地，卸载或清除浏览器数据会丢失，请定期备份。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="tabbar">
+        <div class="tab-item active" onclick="switchTab('products')">
+            <div class="tab-icon">📦</div>
+            <div>产品</div>
+        </div>
+        <div class="tab-item" onclick="switchTab('inventory')">
+            <div class="tab-icon">📊</div>
+            <div>库存</div>
+        </div>
+        <div class="tab-item" onclick="switchTab('purchase')">
+            <div class="tab-icon">📥</div>
+            <div>采购</div>
+        </div>
+        <div class="tab-item" onclick="switchTab('sales')">
+            <div class="tab-icon">📤</div>
+            <div>销售</div>
+        </div>
+        <div class="tab-item" onclick="switchTab('mine')">
+            <div class="tab-icon">👤</div>
+            <div>我的</div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+    // ==================== IndexedDB 封装 ====================
+    const DB_NAME = 'SimpleERP';
+    const DB_VERSION = 1;
+    let db = null;
+
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onerror = () => reject(request.error);
+            request.onsuccess = () => {
+                db = request.result;
+                resolve(db);
+            };
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('products')) {
+                    db.createObjectStore('products', { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains('purchases')) {
+                    db.createObjectStore('purchases', { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains('sales')) {
+                    db.createObjectStore('sales', { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains('suppliers')) {
+                    db.createObjectStore('suppliers', { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains('customers')) {
+                    db.createObjectStore('customers', { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains('meta')) {
+                    db.createObjectStore('meta', { keyPath: 'key' });
+                }
+            };
+        });
+    }
+
+    function dbClearAll() {
+        const stores = ['products', 'purchases', 'sales', 'suppliers', 'customers', 'meta'];
+        return Promise.all(stores.map(store => dbClear(store)));
+    }
+
+    function dbClear(storeName) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function dbBulkAdd(storeName, items) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, 'readwrite');
+            const store = tx.objectStore(storeName);
+            items.forEach(item => store.add(item));
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    function dbGetAll(storeName) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, 'readonly');
+            const store = tx.objectStore(storeName);
+            const request = store.getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    function dbSetMeta(key, value) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('meta', 'readwrite');
+            const store = tx.objectStore('meta');
+            store.put({ key, value });
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    }
+
+    function dbGetMeta(key) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction('meta', 'readonly');
+            const store = tx.objectStore('meta');
+            const request = store.get(key);
+            request.onsuccess = () => resolve(request.result ? request.result.value : null);
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    // ==================== 工具函数 ====================
+    function showToast(msg, duration = 2000) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, duration);
+    }
+
+    function fmtMoney(n) {
+        if (n === null || n === undefined) return '0.00';
+        return parseFloat(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function fmtNum(n) {
+        if (n === null || n === undefined) return '0';
+        const num = parseFloat(n);
+        if (Number.isInteger(num)) return num.toString();
+        return num.toFixed(2);
+    }
+
+    // ==================== 页面切换 ====================
+    const pageTitles = {
+        products: '产品信息',
+        inventory: '库存管理',
+        purchase: '采购管理',
+        sales: '销售管理',
+        mine: '我的'
+    };
+
+    let currentTab = 'products';
+
+    function switchTab(tab) {
+        currentTab = tab;
+        // 更新底部导航
+        document.querySelectorAll('.tab-item').forEach((el, i) => {
+            const tabs = ['products', 'inventory', 'purchase', 'sales', 'mine'];
+            el.classList.toggle('active', tabs[i] === tab);
+        });
+        // 更新标题
+        document.getElementById('pageTitle').textContent = pageTitles[tab];
+        // 切换页面
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-' + tab).classList.add('active');
+        // 加载数据
+        loadPageData(tab);
+    }
+
+    function loadPageData(tab) {
+        switch(tab) {
+            case 'products':
+                loadProducts();
+                break;
+            case 'inventory':
+                loadInventory();
+                break;
+            case 'purchase':
+                loadPurchases();
+                break;
+            case 'sales':
+                loadSales();
+                break;
+            case 'mine':
+                loadMine();
+                break;
+        }
+    }
+
+    // ==================== 数据导入 ====================
+    async function handleImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.json')) {
+            showToast('请选择 JSON 格式的数据文件');
+            event.target.value = '';
+            return;
+        }
+
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+
+            if (!data.products || !data.purchases || !data.sales) {
+                showToast('文件格式不正确，缺少必要数据');
+                event.target.value = '';
+                return;
+            }
+
+            // 确认导入
+            if (!confirm(`确定要导入数据吗？\n\n商品：${data.summary?.product_count || data.products.length} 条\n采购：${data.summary?.purchase_count || data.purchases.length} 条\n销售：${data.summary?.sale_count || data.sales.length} 条\n\n导入后将覆盖现有全部数据！`)) {
+                event.target.value = '';
+                return;
+            }
+
+            showToast('正在导入...', 500);
+
+            // 清空旧数据并导入新数据
+            await dbClearAll();
+            await dbBulkAdd('products', data.products || []);
+            await dbBulkAdd('purchases', data.purchases || []);
+            await dbBulkAdd('sales', data.sales || []);
+            await dbBulkAdd('suppliers', data.suppliers || []);
+            await dbBulkAdd('customers', data.customers || []);
+            await dbSetMeta('import_time', data.export_time || new Date().toLocaleString());
+            await dbSetMeta('version', data.version || '1.0');
+
+            showToast('导入成功！');
+            event.target.value = '';
+
+            // 刷新当前页面
+            loadPageData(currentTab);
+
+        } catch (e) {
+            console.error(e);
+            showToast('导入失败：' + e.message);
+            event.target.value = '';
+        }
+    }
+
+    // ==================== 产品页面 ====================
+    let allProducts = [];
+
+    async function loadProducts() {
+        allProducts = await dbGetAll('products');
+        allProducts.sort((a, b) => b.id - a.id);
+        populateBrandCategory('productBrand', 'productCategory', allProducts);
+        renderProducts(allProducts);
+    }
+
+    function populateBrandCategory(brandId, catId, products) {
+        const brands = [...new Set(products.map(p => p.brand).filter(b => b))].sort();
+        const cats = [...new Set(products.map(p => p.category).filter(c => c))].sort();
+
+        const brandSelect = document.getElementById(brandId);
+        const currentBrand = brandSelect.value;
+        brandSelect.innerHTML = '<option value="">全部品牌</option>';
+        brands.forEach(b => {
+            brandSelect.innerHTML += `<option value="${b}">${b}</option>`;
+        });
+        brandSelect.value = currentBrand;
+
+        const catSelect = document.getElementById(catId);
+        const currentCat = catSelect.value;
+        catSelect.innerHTML = '<option value="">全部分类</option>';
+        cats.forEach(c => {
+            catSelect.innerHTML += `<option value="${c}">${c}</option>`;
+        });
+        catSelect.value = currentCat;
+    }
+
+    function renderProducts(products) {
+        const container = document.getElementById('productList');
+        if (products.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📦</div>
+                    <div class="empty-text">暂无产品数据</div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = products.map(p => `
+            <div class="list-item">
+                <div class="item-title">${p.name || '-'}</div>
+                <div class="item-meta">
+                    <span>${p.brand || '-'}</span>
+                    <span>${p.category || '-'}</span>
+                </div>
+                <div class="item-meta">
+                    <span>进货价：¥${fmtMoney(p.purchase_price)}</span>
+                    <span>售价：¥${fmtMoney(p.sale_price)}</span>
+                </div>
+                <div class="item-meta">
+                    <span>库存：${fmtNum(p.current_stock)} ${p.unit || ''}</span>
+                    <span style="color:${parseFloat(p.current_stock) <= parseFloat(p.warning_stock) && parseFloat(p.warning_stock) > 0 ? '#dc2626' : '#64748b'}">
+                        ${parseFloat(p.current_stock) <= parseFloat(p.warning_stock) && parseFloat(p.warning_stock) > 0 ? '⚠️ 低库存' : ''}
+                    </span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function filterProducts() {
+        const keyword = document.getElementById('productKeyword').value.toLowerCase();
+        const brand = document.getElementById('productBrand').value;
+        const category = document.getElementById('productCategory').value;
+
+        let filtered = allProducts;
+        if (keyword) {
+            filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(keyword));
+        }
+        if (brand) {
+            filtered = filtered.filter(p => p.brand === brand);
+        }
+        if (category) {
+            filtered = filtered.filter(p => p.category === category);
+        }
+        renderProducts(filtered);
+    }
+
+    function resetProductFilter() {
+        document.getElementById('productKeyword').value = '';
+        document.getElementById('productBrand').value = '';
+        document.getElementById('productCategory').value = '';
+        renderProducts(allProducts);
+    }
+
+    // ==================== 库存页面 ====================
+    let allInventory = [];
+
+    async function loadInventory() {
+        allInventory = await dbGetAll('products');
+        allInventory.sort((a, b) => b.id - a.id);
+
+        // 计算统计
+        const totalProducts = allInventory.length;
+        const totalStock = allInventory.reduce((sum, p) => sum + parseFloat(p.current_stock || 0), 0);
+        const totalValue = allInventory.reduce((sum, p) => sum + parseFloat(p.current_stock || 0) * parseFloat(p.avg_cost || 0), 0);
+        const lowStock = allInventory.filter(p => parseFloat(p.warning_stock || 0) > 0 && parseFloat(p.current_stock || 0) <= parseFloat(p.warning_stock || 0)).length;
+
+        document.getElementById('invTotalProducts').textContent = totalProducts;
+        document.getElementById('invTotalStock').textContent = fmtNum(totalStock);
+        document.getElementById('invTotalValue').textContent = '¥' + fmtMoney(totalValue);
+        document.getElementById('invLowStock').textContent = lowStock;
+
+        populateBrandCategory('invBrand', 'invCategory', allInventory);
+        renderInventory(allInventory);
+    }
+
+    function renderInventory(items) {
+        const container = document.getElementById('inventoryList');
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📊</div>
+                    <div class="empty-text">暂无库存数据</div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = items.map(p => {
+            const isLow = parseFloat(p.warning_stock || 0) > 0 && parseFloat(p.current_stock || 0) <= parseFloat(p.warning_stock || 0);
+            const stockValue = parseFloat(p.current_stock || 0) * parseFloat(p.avg_cost || 0);
+            return `
+            <div class="list-item">
+                <div class="item-title">${p.name || '-'}</div>
+                <div class="item-meta">
+                    <span>${p.brand || '-'}</span>
+                    <span>${p.category || '-'}</span>
+                </div>
+                <div class="item-meta">
+                    <span>当前库存：<span class="${isLow ? 'low-stock' : ''}">${fmtNum(p.current_stock)} ${p.unit || ''}</span></span>
+                    <span>均价：¥${fmtMoney(p.avg_cost)}</span>
+                </div>
+                <div class="item-meta">
+                    <span>库存价值：¥${fmtMoney(stockValue)}</span>
+                    <span>${isLow ? '<span class="tag tag-red">低库存</span>' : '<span class="tag tag-green">正常</span>'}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function filterInventory() {
+        const keyword = document.getElementById('invKeyword').value.toLowerCase();
+        const brand = document.getElementById('invBrand').value;
+        const category = document.getElementById('invCategory').value;
+        const lowOnly = document.getElementById('invLowOnly').checked;
+
+        let filtered = allInventory;
+        if (keyword) {
+            filtered = filtered.filter(p => (p.name || '').toLowerCase().includes(keyword));
+        }
+        if (brand) {
+            filtered = filtered.filter(p => p.brand === brand);
+        }
+        if (category) {
+            filtered = filtered.filter(p => p.category === category);
+        }
+        if (lowOnly) {
+            filtered = filtered.filter(p => parseFloat(p.warning_stock || 0) > 0 && parseFloat(p.current_stock || 0) <= parseFloat(p.warning_stock || 0));
+        }
+        renderInventory(filtered);
+    }
+
+    function resetInventoryFilter() {
+        document.getElementById('invKeyword').value = '';
+        document.getElementById('invBrand').value = '';
+        document.getElementById('invCategory').value = '';
+        document.getElementById('invLowOnly').checked = false;
+        renderInventory(allInventory);
+    }
+
+    // ==================== 采购页面 ====================
+    let allPurchases = [];
+
+    async function loadPurchases() {
+        allPurchases = await dbGetAll('purchases');
+        allPurchases.sort((a, b) => {
+            if (a.purchase_date !== b.purchase_date) return b.purchase_date.localeCompare(a.purchase_date);
+            return b.id - a.id;
+        });
+
+        // 统计
+        const count = allPurchases.length;
+        const total = allPurchases.reduce((sum, p) => sum + parseFloat(p.total_amount || 0), 0);
+
+        document.getElementById('purCount').textContent = count;
+        document.getElementById('purTotal').textContent = '¥' + fmtMoney(total);
+
+        renderPurchases(allPurchases);
+    }
+
+    function renderPurchases(items) {
+        const container = document.getElementById('purchaseList');
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📥</div>
+                    <div class="empty-text">暂无采购记录</div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = items.map(p => `
+            <div class="list-item">
+                <div class="item-title">${p.product_name || '-'}</div>
+                <div class="item-meta">
+                    <span>${p.purchase_date || '-'}</span>
+                    <span class="money">¥${fmtMoney(p.total_amount)}</span>
+                </div>
+                <div class="item-meta">
+                    <span>供应商：${p.supplier_name || '-'}</span>
+                    <span>数量：${fmtNum(p.quantity)}</span>
+                </div>
+                <div class="item-meta">
+                    <span>单价：¥${fmtMoney(p.unit_price)}</span>
+                    <span>${p.payment_type === 'credit' ? '<span class="tag tag-orange">赊账</span>' : '<span class="tag tag-green">现结</span>'}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function filterPurchases() {
+        const dateStart = document.getElementById('purDateStart').value;
+        const dateEnd = document.getElementById('purDateEnd').value;
+        const keyword = document.getElementById('purKeyword').value.toLowerCase();
+
+        let filtered = allPurchases;
+        if (dateStart) {
+            filtered = filtered.filter(p => p.purchase_date >= dateStart);
+        }
+        if (dateEnd) {
+            filtered = filtered.filter(p => p.purchase_date <= dateEnd);
+        }
+        if (keyword) {
+            filtered = filtered.filter(p =>
+                (p.product_name || '').toLowerCase().includes(keyword) ||
+                (p.supplier_name || '').toLowerCase().includes(keyword)
+            );
+        }
+        renderPurchases(filtered);
+    }
+
+    function resetPurchaseFilter() {
+        document.getElementById('purDateStart').value = '';
+        document.getElementById('purDateEnd').value = '';
+        document.getElementById('purKeyword').value = '';
+        renderPurchases(allPurchases);
+    }
+
+    // ==================== 销售页面 ====================
+    let allSales = [];
+
+    async function loadSales() {
+        allSales = await dbGetAll('sales');
+        allSales.sort((a, b) => {
+            if (a.sale_date !== b.sale_date) return b.sale_date.localeCompare(a.sale_date);
+            return b.id - a.id;
+        });
+
+        // 统计
+        const count = allSales.length;
+        const total = allSales.reduce((sum, s) => sum + parseFloat(s.total_amount || 0), 0);
+        const cost = allSales.reduce((sum, s) => sum + parseFloat(s.cost_amount || 0), 0);
+        const profit = allSales.reduce((sum, s) => sum + parseFloat(s.profit || 0), 0);
+
+        document.getElementById('saleCount').textContent = count;
+        document.getElementById('saleTotal').textContent = '¥' + fmtMoney(total);
+        document.getElementById('saleCost').textContent = '¥' + fmtMoney(cost);
+        document.getElementById('saleProfit').textContent = '¥' + fmtMoney(profit);
+        document.getElementById('saleProfit').className = 'stat-value ' + (profit >= 0 ? 'green' : 'red');
+
+        renderSales(allSales);
+    }
+
+    function renderSales(items) {
+        const container = document.getElementById('salesList');
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📤</div>
+                    <div class="empty-text">暂无销售记录</div>
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = items.map(s => {
+            const profit = parseFloat(s.profit || 0);
+            return `
+            <div class="list-item">
+                <div class="item-title">${s.product_name || '-'}</div>
+                <div class="item-meta">
+                    <span>${s.sale_date || '-'}</span>
+                    <span class="money">¥${fmtMoney(s.total_amount)}</span>
+                </div>
+                <div class="item-meta">
+                    <span>客户：${s.customer_name || '-'}</span>
+                    <span>数量：${fmtNum(s.quantity)}</span>
+                </div>
+                <div class="item-meta">
+                    <span>单价：¥${fmtMoney(s.unit_price)}</span>
+                    <span>${s.payment_type === 'credit' ? '<span class="tag tag-orange">赊账</span>' : '<span class="tag tag-green">现结</span>'}</span>
+                </div>
+                <div class="item-meta">
+                    <span>成本：¥${fmtMoney(s.cost_amount)}</span>
+                    <span class="money ${profit < 0 ? 'negative' : ''}" style="color:${profit >= 0 ? '#16a34a' : '#dc2626'}">毛利：¥${fmtMoney(profit)}</span>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    function filterSales() {
+        const dateStart = document.getElementById('saleDateStart').value;
+        const dateEnd = document.getElementById('saleDateEnd').value;
+        const keyword = document.getElementById('saleKeyword').value.toLowerCase();
+
+        let filtered = allSales;
+        if (dateStart) {
+            filtered = filtered.filter(s => s.sale_date >= dateStart);
+        }
+        if (dateEnd) {
+            filtered = filtered.filter(s => s.sale_date <= dateEnd);
+        }
+        if (keyword) {
+            filtered = filtered.filter(s =>
+                (s.product_name || '').toLowerCase().includes(keyword) ||
+                (s.customer_name || '').toLowerCase().includes(keyword)
+            );
+        }
+        renderSales(filtered);
+    }
+
+    function resetSaleFilter() {
+        document.getElementById('saleDateStart').value = '';
+        document.getElementById('saleDateEnd').value = '';
+        document.getElementById('saleKeyword').value = '';
+        renderSales(allSales);
+    }
+
+    // ==================== 我的页面 ====================
+    async function loadMine() {
+        const products = await dbGetAll('products');
+        const purchases = await dbGetAll('purchases');
+        const sales = await dbGetAll('sales');
+        const importTime = await dbGetMeta('import_time');
+
+        const container = document.getElementById('dataSummary');
+        if (products.length === 0 && purchases.length === 0 && sales.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📦</div>
+                    <div class="empty-text">暂无数据，请先导入数据</div>
+                </div>`;
+        } else {
+            const totalValue = products.reduce((sum, p) => sum + parseFloat(p.current_stock || 0) * parseFloat(p.avg_cost || 0), 0);
+            container.innerHTML = `
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-item-value">${products.length}</div>
+                        <div class="summary-item-label">商品</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-item-value">${purchases.length}</div>
+                        <div class="summary-item-label">采购</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-item-value">${sales.length}</div>
+                        <div class="summary-item-label">销售</div>
+                    </div>
+                </div>
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9;font-size:12px;color:#64748b;">
+                    库存总价值：¥${fmtMoney(totalValue)}<br>
+                    ${importTime ? '数据导入时间：' + importTime : ''}
+                </div>
+            `;
+        }
+    }
+
+    // ==================== 初始化 ====================
+    async function init() {
+        try {
+            await initDB();
+            switchTab('products');
+        } catch (e) {
+            console.error('初始化失败', e);
+            showToast('初始化失败：' + e.message);
+        }
+    }
+
+    init();
+    </script>
+</body>
+</html>
